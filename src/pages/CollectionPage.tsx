@@ -200,18 +200,14 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
       ) : filtered.length > 0 ? (
         view === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {filtered.map((f, i) => (
-              <div key={f.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i * 30, 300)}ms` }}>
-                <FragranceCard fragrance={f} onClick={() => setSelected(f)} />
-              </div>
+            {filtered.map((f) => (
+              <FragranceCard key={f.id} fragrance={f} onClick={() => setSelected(f)} />
             ))}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {filtered.map((f, i) => (
-              <div key={f.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i * 20, 200)}ms` }}>
-                <FragranceCard fragrance={f} onClick={() => setSelected(f)} compact />
-              </div>
+            {filtered.map((f) => (
+              <FragranceCard key={f.id} fragrance={f} onClick={() => setSelected(f)} compact />
             ))}
           </div>
         )
