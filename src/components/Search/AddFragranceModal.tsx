@@ -191,7 +191,7 @@ export function AddFragranceModal({ open, onClose, onAdd, isWishlist, existingId
                 >
                   <div className="w-10 h-14 rounded-sm bg-surface-3 overflow-hidden shrink-0 flex items-center justify-center">
                     {r.image ? (
-                      <img src={r.image} alt={r.name} className="w-full h-full object-cover" />
+                      <img src={r.image} alt={r.name} loading="lazy" className="w-full h-full object-cover" />
                     ) : (
                       <Droplets size={14} className="text-txt-muted" />
                     )}

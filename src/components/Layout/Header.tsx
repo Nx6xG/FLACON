@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { Library, Search, Trophy, Heart, BarChart3, Settings, LogOut, Menu, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 
 interface HeaderProps {
@@ -19,6 +19,8 @@ const navItems = [
 
 export function Header({ user, onSignOut }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
   const location = useLocation();
 
   // Close mobile menu on route change (e.g. browser back)
@@ -26,9 +28,26 @@ export function Header({ user, onSignOut }: HeaderProps) {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  // Hide header on scroll down (mobile only), show on scroll up
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const onScroll = () => {
+      if (!mq.matches) { setHidden(false); return; }
+      const y = window.scrollY;
+      if (y > lastScrollY.current && y > 80) {
+        setHidden(true);
+      } else {
+        setHidden(false);
+      }
+      lastScrollY.current = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <>
-      <header className="sticky top-0 z-50 bg-bg/85 backdrop-blur-xl border-b border-border pt-[env(safe-area-inset-top)]">
+      <header className={`sticky top-0 z-50 bg-bg/85 backdrop-blur-xl border-b border-border pt-[env(safe-area-inset-top)] transition-transform duration-300 ${hidden && !mobileOpen ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
           <NavLink to="/" className="font-display text-2xl font-light tracking-[6px] text-gold uppercase">
             <span className="font-semibold">F</span>lacon

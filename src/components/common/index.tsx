@@ -37,15 +37,50 @@ interface ModalProps {
 
 export function Modal({ open, onClose, title, children, wide }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
+
+      const handleKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') { onClose(); return; }
+
+        // Focus trap
+        if (e.key === 'Tab' && modalRef.current) {
+          const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length === 0) return;
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (e.shiftKey) {
+            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+          } else {
+            if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        }
+      };
+
+      window.addEventListener('keydown', handleKey);
+
+      // Auto-focus first focusable element
+      requestAnimationFrame(() => {
+        const first = modalRef.current?.querySelector<HTMLElement>(
+          'button, [href], input, select, textarea'
+        );
+        first?.focus();
+      });
+
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKey);
+      };
     } else {
       document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
-  }, [open]);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -54,11 +89,14 @@ export function Modal({ open, onClose, title, children, wide }: ModalProps) {
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
       onClick={(e) => e.target === overlayRef.current && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
     >
-      <div className={`bg-surface border border-border rounded-t-lg sm:rounded-lg w-full ${wide ? 'sm:max-w-2xl' : 'sm:max-w-lg'} max-h-[90vh] flex flex-col animate-slide-up`}>
+      <div ref={modalRef} className={`bg-surface border border-border rounded-t-lg sm:rounded-lg w-full ${wide ? 'sm:max-w-2xl' : 'sm:max-w-lg'} max-h-[90vh] flex flex-col animate-slide-up`}>
         <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
           <h2 className="font-display text-xl text-txt">{title}</h2>
-          <button onClick={onClose} className="text-txt-muted hover:text-txt transition-colors p-1">
+          <button onClick={onClose} className="text-txt-muted hover:text-txt transition-colors p-1" aria-label="Schließen">
             <X size={20} />
           </button>
         </div>
@@ -156,16 +194,21 @@ export function Select({ label, options, className = '', ...props }: SelectProps
   return (
     <label className="flex flex-col gap-1">
       {label && <span className="text-xs text-txt-muted uppercase tracking-wider">{label}</span>}
-      <select
-        className={`bg-surface-2 border border-border rounded-sm px-3 py-2.5 text-sm text-txt focus:outline-none focus:border-gold-dim transition-colors font-body appearance-none ${className}`}
-        {...props}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+      <div className="relative">
+        <select
+          className={`bg-surface-2 border border-border rounded-sm px-3 py-2.5 pr-8 text-sm text-txt focus:outline-none focus:border-gold-dim transition-colors font-body appearance-none w-full ${className}`}
+          {...props}
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-txt-muted" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M3 4.5L6 7.5L9 4.5" />
+        </svg>
+      </div>
     </label>
   );
 }
@@ -239,24 +282,35 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
 interface ToastItem {
   id: number;
   message: string;
+  onUndo?: () => void;
 }
 
 export function useToast() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const nextId = useRef(0);
+  const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
-  const show = useCallback((message: string) => {
-    const id = nextId.current++;
-    setToasts((prev) => [...prev, { id, message }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 2500);
+  const dismiss = useCallback((id: number) => {
+    const timer = timers.current.get(id);
+    if (timer) clearTimeout(timer);
+    timers.current.delete(id);
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  return { toasts, show };
+  const show = useCallback((message: string, onUndo?: () => void) => {
+    const id = nextId.current++;
+    setToasts((prev) => [...prev, { id, message, onUndo }]);
+    const timer = setTimeout(() => {
+      timers.current.delete(id);
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, onUndo ? 5000 : 2500);
+    timers.current.set(id, timer);
+  }, []);
+
+  return { toasts, show, dismiss };
 }
 
-export function ToastContainer({ toasts }: { toasts: ToastItem[] }) {
+export function ToastContainer({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss?: (id: number) => void }) {
   if (toasts.length === 0) return null;
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 items-center">
@@ -267,6 +321,17 @@ export function ToastContainer({ toasts }: { toasts: ToastItem[] }) {
         >
           <Check size={14} className="text-accent-fresh shrink-0" />
           <span className="text-sm text-txt">{t.message}</span>
+          {t.onUndo && (
+            <button
+              onClick={() => {
+                t.onUndo?.();
+                onDismiss?.(t.id);
+              }}
+              className="ml-2 text-xs font-semibold text-gold hover:text-gold-light transition-colors"
+            >
+              Rückgängig
+            </button>
+          )}
         </div>
       ))}
     </div>

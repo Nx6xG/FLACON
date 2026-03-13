@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Header } from '@/components/Layout/Header';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,10 +25,16 @@ export default function App() {
     addFragrance,
     updateFragrance,
     deleteFragrance,
+    error: collectionError,
   } = useCollection(user?.id);
 
   const [rankingSelected, setRankingSelected] = useState<Fragrance | null>(null);
-  const { toasts, show: showToast } = useToast();
+  const { toasts, show: showToast, dismiss: dismissToast } = useToast();
+
+  // Show collection errors as toasts
+  useEffect(() => {
+    if (collectionError) showToast(`Fehler: ${collectionError}`);
+  }, [collectionError, showToast]);
 
   const existingFragellaIds = useMemo(
     () => new Set(fragrances.filter((f) => f.fragella_id).map((f) => f.fragella_id!)),
@@ -45,6 +51,18 @@ export default function App() {
     }
     return result;
   }, [addFragrance, showToast]);
+
+  const deleteWithUndo = useCallback(async (id: string) => {
+    const fragrance = fragrances.find((f) => f.id === id);
+    const success = await deleteFragrance(id);
+    if (success && fragrance) {
+      const { id: _id, user_id, created_at, updated_at, ...input } = fragrance;
+      showToast(`${fragrance.name} gelöscht`, () => {
+        addFragrance(input as FragranceInput);
+      });
+    }
+    return success;
+  }, [fragrances, deleteFragrance, addFragrance, showToast]);
 
   const handleMoveToCollection = async (id: string) => {
     return updateFragrance(id, { is_wishlist: false });
@@ -89,8 +107,9 @@ export default function App() {
                     collection={collection}
                     onAdd={addWithToast}
                     onUpdate={updateFragrance}
-                    onDelete={deleteFragrance}
+                    onDelete={deleteWithUndo}
                     existingIds={existingFragellaIds}
+                    onToast={showToast}
                   />
                 }
               />
@@ -120,8 +139,9 @@ export default function App() {
                     wishlist={wishlist}
                     onAdd={addWithToast}
                     onMoveToCollection={handleMoveToCollection}
-                    onDelete={deleteFragrance}
+                    onDelete={deleteWithUndo}
                     existingIds={existingFragellaIds}
+                    onToast={showToast}
                   />
                 }
               />
@@ -152,9 +172,10 @@ export default function App() {
           onClose={() => setRankingSelected(null)}
           onSave={updateFragrance}
           onDelete={deleteFragrance}
+          onToast={showToast}
         />
 
-        <ToastContainer toasts={toasts} />
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       </div>
     </BrowserRouter>
   );

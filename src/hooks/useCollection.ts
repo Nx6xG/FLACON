@@ -34,7 +34,7 @@ export function useCollection(userId: string | undefined) {
     fetchAll();
   }, [fetchAll]);
 
-  // Real-time subscription
+  // Real-time subscription — granular event handling
   useEffect(() => {
     if (!userId) return;
 
@@ -43,13 +43,47 @@ export function useCollection(userId: string | undefined) {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'fragrances',
           filter: `user_id=eq.${userId}`,
         },
-        () => {
-          fetchAll();
+        (payload) => {
+          const newItem = payload.new as Fragrance;
+          setFragrances((prev) => {
+            if (prev.some((f) => f.id === newItem.id)) return prev;
+            return [newItem, ...prev];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'fragrances',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Fragrance;
+          setFragrances((prev) =>
+            prev.map((f) => f.id === updated.id ? updated : f)
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'fragrances',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const deletedId = (payload.old as any).id;
+          if (deletedId) {
+            setFragrances((prev) => prev.filter((f) => f.id !== deletedId));
+          }
         }
       )
       .subscribe();
@@ -57,7 +91,7 @@ export function useCollection(userId: string | undefined) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchAll]);
+  }, [userId]);
 
   const addFragrance = async (input: FragranceInput): Promise<Fragrance | null> => {
     if (!userId) return null;

@@ -3,7 +3,7 @@ import { Modal, Button, Input, Textarea, Select, StarRating, TierBadge } from '@
 import { RadarChart } from '@/components/Rating/RadarChart';
 import { useImageFetch } from '@/hooks/useImageFetch';
 import type { Fragrance, FragranceInput, Concentration, FragranceFamily, Season, Tier, RatingDetails } from '@/lib/types';
-import { Trash2, Droplets, Loader2 } from 'lucide-react';
+import { Trash2, Droplets, Loader2, Pencil } from 'lucide-react';
 
 const concentrationOptions: { value: Concentration; label: string }[] = [
   { value: 'Parfum', label: 'Parfum' },
@@ -48,9 +48,19 @@ interface FragranceDetailProps {
   onClose: () => void;
   onSave: (id: string, updates: Partial<FragranceInput>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
+  onToast?: (message: string) => void;
 }
 
-export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: FragranceDetailProps) {
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className="text-xs text-txt-muted uppercase tracking-wider">{label}</span>
+      <p className="text-sm text-txt mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, onToast }: FragranceDetailProps) {
   const [tab, setTab] = useState<'info' | 'rating' | 'notes'>('info');
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -64,6 +74,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
   const [sizeMl, setSizeMl] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
   const [notesText, setNotesText] = useState('');
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -90,6 +101,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
       setPurchaseDate(fragrance.purchase_date || '');
       setNotesText(fragrance.notes_text || '');
       setTab('info');
+      setEditing(false);
       setConfirmDelete(false);
     }
   }, [fragrance?.id]);
@@ -98,7 +110,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(fragrance.id, {
+    const success = await onSave(fragrance.id, {
       name: name.trim() || fragrance.name,
       brand: brand.trim() || fragrance.brand,
       concentration,
@@ -113,6 +125,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
       notes_text: notesText,
     });
     setSaving(false);
+    if (success) onToast?.(`${name.trim() || fragrance.name} gespeichert`);
     onClose();
   };
 
@@ -137,7 +150,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
       <div className="flex gap-4 mb-6">
         <div className="w-20 h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden shrink-0">
           {imageUrl ? (
-            <img src={imageUrl} alt={fragrance.name} className="w-full h-full object-cover" />
+            <img src={imageUrl} alt={fragrance.name} loading="lazy" className="w-full h-full object-cover" />
           ) : imageLoading ? (
             <Loader2 size={18} className="text-txt-muted animate-spin" />
           ) : (
@@ -166,7 +179,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-border pb-px">
+      <div className="flex items-center gap-1 mb-4 border-b border-border pb-px">
         {(['info', 'rating', 'notes'] as const).map((t) => (
           <button
             key={t}
@@ -177,86 +190,128 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
             {t === 'info' ? 'Details' : t === 'rating' ? 'Bewertung' : 'Notizen'}
           </button>
         ))}
+        {tab === 'info' && (
+          <button
+            onClick={() => setEditing(!editing)}
+            className={`ml-auto p-2 rounded-sm transition-colors ${editing ? 'text-gold bg-surface-2' : 'text-txt-muted hover:text-txt'}`}
+            title={editing ? 'Bearbeitung beenden' : 'Bearbeiten'}
+          >
+            <Pencil size={14} />
+          </button>
+        )}
       </div>
 
       {/* Tab content */}
       {tab === 'info' && (
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <Input
-            label="Marke"
-            value={brand}
-            onChange={(e) => setBrand(e.target.value)}
-          />
-          <Select
-            label="Konzentration"
-            value={concentration}
-            onChange={(e) => setConcentration(e.target.value as Concentration)}
-            options={concentrationOptions}
-          />
-          <Select
-            label="Duftfamilie"
-            value={family}
-            onChange={(e) => setFamily(e.target.value as FragranceFamily)}
-            options={familyOptions}
-          />
-          <Input
-            label="Kaufpreis (€)"
-            type="number"
-            step="0.01"
-            value={purchasePrice}
-            onChange={(e) => setPurchasePrice(e.target.value)}
-            placeholder="0.00"
-          />
-          <Input
-            label="Marktwert (€)"
-            type="number"
-            step="0.01"
-            value={marketPrice}
-            onChange={(e) => setMarketPrice(e.target.value)}
-            placeholder="0.00"
-          />
-          <Input
-            label="Größe (ml)"
-            type="number"
-            value={sizeMl}
-            onChange={(e) => setSizeMl(e.target.value)}
-            placeholder="100"
-          />
-          <Input
-            label="Kaufdatum"
-            type="date"
-            value={purchaseDate}
-            onChange={(e) => setPurchaseDate(e.target.value)}
-          />
-          <div className="col-span-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-xs text-txt-muted uppercase tracking-wider">
-                Füllstand: {fillLevel}%
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={fillLevel}
-                onChange={(e) => setFillLevel(parseInt(e.target.value))}
-                className="w-full accent-gold"
-              />
-            </label>
-          </div>
-          <div className="col-span-2">
-            <Select
-              label="Tier"
-              value={tier}
-              onChange={(e) => setTier(e.target.value as Tier | '')}
-              options={tiers.map((t) => ({ value: t, label: t || '— Kein Tier —' }))}
+        editing ? (
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
+            <Input
+              label="Marke"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+            />
+            <Select
+              label="Konzentration"
+              value={concentration}
+              onChange={(e) => setConcentration(e.target.value as Concentration)}
+              options={concentrationOptions}
+            />
+            <Select
+              label="Duftfamilie"
+              value={family}
+              onChange={(e) => setFamily(e.target.value as FragranceFamily)}
+              options={familyOptions}
+            />
+            <Input
+              label="Kaufpreis (€)"
+              type="number"
+              step="0.01"
+              min="0"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+              placeholder="0.00"
+            />
+            <Input
+              label="Marktwert (€)"
+              type="number"
+              step="0.01"
+              min="0"
+              value={marketPrice}
+              onChange={(e) => setMarketPrice(e.target.value)}
+              placeholder="0.00"
+            />
+            <Input
+              label="Größe (ml)"
+              type="number"
+              min="0"
+              value={sizeMl}
+              onChange={(e) => setSizeMl(e.target.value)}
+              placeholder="100"
+            />
+            <Input
+              label="Kaufdatum"
+              type="date"
+              value={purchaseDate}
+              onChange={(e) => setPurchaseDate(e.target.value)}
+            />
+            <div className="col-span-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-xs text-txt-muted uppercase tracking-wider">
+                  Füllstand: {fillLevel}%
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={fillLevel}
+                  onChange={(e) => setFillLevel(parseInt(e.target.value))}
+                  className="w-full accent-gold"
+                />
+              </label>
+            </div>
+            <div className="col-span-2">
+              <Select
+                label="Tier"
+                value={tier}
+                onChange={(e) => setTier(e.target.value as Tier | '')}
+                options={tiers.map((t) => ({ value: t, label: t || '— Kein Tier —' }))}
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <DetailRow label="Name" value={name} />
+              <DetailRow label="Marke" value={brand} />
+              <DetailRow label="Konzentration" value={concentrationOptions.find((o) => o.value === concentration)?.label || concentration} />
+              <DetailRow label="Duftfamilie" value={familyOptions.find((o) => o.value === family)?.label || family} />
+              <DetailRow label="Kaufpreis" value={purchasePrice ? `${purchasePrice} €` : '—'} />
+              <DetailRow label="Marktwert" value={marketPrice ? `${marketPrice} €` : '—'} />
+              <DetailRow label="Größe" value={sizeMl ? `${sizeMl} ml` : '—'} />
+              <DetailRow label="Kaufdatum" value={purchaseDate || '—'} />
+            </div>
+            <div className="pt-1">
+              <span className="text-xs text-txt-muted uppercase tracking-wider">Füllstand</span>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="flex-1 h-2 bg-surface-2 rounded-full overflow-hidden">
+                  <div className="h-full bg-gold rounded-full transition-all" style={{ width: `${fillLevel}%` }} />
+                </div>
+                <span className="text-xs text-txt-dim w-8 text-right">{fillLevel}%</span>
+              </div>
+            </div>
+            {tier && (
+              <div>
+                <span className="text-xs text-txt-muted uppercase tracking-wider">Tier</span>
+                <div className="mt-1"><TierBadge tier={tier as Tier} /></div>
+              </div>
+            )}
+          </div>
+        )
       )}
 
       {tab === 'rating' && (

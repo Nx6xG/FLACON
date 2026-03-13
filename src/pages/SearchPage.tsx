@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFragellaSearch } from '@/hooks/useFragellaSearch';
-import { Button, Input } from '@/components/common';
+import { Button, Input, Select } from '@/components/common';
 import { mapConcentration, mapFamily } from '@/lib/mappers';
 import type { FragranceInput, FragellaSearchResult } from '@/lib/types';
-import { Search, Plus, Loader2, Droplets, Check } from 'lucide-react';
+import { Search, Plus, Loader2, Droplets, Check, Clock, X } from 'lucide-react';
 
 interface SearchPageProps {
   onAdd: (input: FragranceInput) => Promise<any>;
@@ -12,9 +12,27 @@ interface SearchPageProps {
 
 export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
   const [query, setQuery] = useState('');
-  const { results, loading, error, search } = useFragellaSearch();
+  const { results, loading, error, search, history, clearHistory } = useFragellaSearch();
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'default' | 'rating' | 'price' | 'year'>('default');
+
+  const sortedResults = useMemo(() => {
+    if (sortBy === 'default') return results;
+    const sorted = [...results];
+    switch (sortBy) {
+      case 'rating':
+        sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'price':
+        sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+        break;
+      case 'year':
+        sorted.sort((a, b) => (b.launch_year || 0) - (a.launch_year || 0));
+        break;
+    }
+    return sorted;
+  }, [results, sortBy]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,8 +100,25 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
         </div>
       )}
 
+      {results.length > 0 && (
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-txt-muted">{results.length} Ergebnisse</p>
+          <Select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            options={[
+              { value: 'default', label: 'Relevanz' },
+              { value: 'rating', label: 'Beste Bewertung' },
+              { value: 'price', label: 'Höchster Preis' },
+              { value: 'year', label: 'Neuestes Jahr' },
+            ]}
+            className="!w-auto"
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-        {results.map((r) => {
+        {sortedResults.map((r) => {
           const alreadyOwned = existingIds.has(r.id);
           const justAdded = addedIds.has(r.id);
           const isAdding = adding === r.id;
@@ -95,7 +130,7 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
             >
               <div className="aspect-[3/4] bg-surface-2 flex items-center justify-center overflow-hidden">
                 {r.image ? (
-                  <img src={r.image} alt={r.name} className="w-full h-full object-cover" />
+                  <img src={r.image} alt={r.name} loading="lazy" className="w-full h-full object-cover" />
                 ) : (
                   <Droplets size={32} className="text-txt-muted" />
                 )}
@@ -162,9 +197,31 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
       {!loading && results.length === 0 && !query && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Search size={48} className="text-txt-muted mb-4" />
-          <p className="text-sm text-txt-muted max-w-sm">
+          <p className="text-sm text-txt-muted max-w-sm mb-6">
             Durchsuche die Parfum-Datenbank nach Name oder Marke und füge Düfte zu deiner Sammlung oder Wunschliste hinzu.
           </p>
+          {history.length > 0 && (
+            <div className="w-full max-w-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-txt-muted uppercase tracking-wider">Letzte Suchen</span>
+                <button onClick={clearHistory} className="text-xs text-txt-muted hover:text-txt transition-colors">
+                  Löschen
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {history.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => { setQuery(q); search(q); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-surface border border-border rounded-full text-sm text-txt-dim hover:border-gold-dim hover:text-gold transition-colors"
+                  >
+                    <Clock size={12} />
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

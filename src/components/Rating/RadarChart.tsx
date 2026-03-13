@@ -99,12 +99,26 @@ export function RadarChart({ rating, size = 200 }: RadarChartProps) {
         strokeWidth={2}
       />
 
-      {/* Data points */}
+      {/* Data points with values */}
       {labels.map((l, i) => {
         const val = rating[l.key as keyof RatingDetails] || 0;
         if (val === 0) return null;
         const p = getPoint(i, val);
-        return <circle key={i} cx={p.x} cy={p.y} r={3} fill="#c9a96e" />;
+        return (
+          <g key={`point-${i}`}>
+            <circle cx={p.x} cy={p.y} r={3} fill="#c9a96e" />
+            <text
+              x={p.x}
+              y={p.y - 8}
+              textAnchor="middle"
+              fill="#c9a96e"
+              fontSize={9}
+              fontWeight="bold"
+            >
+              {val}
+            </text>
+          </g>
+        );
       })}
 
       {/* Labels */}

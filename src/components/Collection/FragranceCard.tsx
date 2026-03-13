@@ -1,7 +1,7 @@
 import type { Fragrance } from '@/lib/types';
 import { TierBadge, Badge } from '@/components/common';
 import { useImageFetch } from '@/hooks/useImageFetch';
-import { Droplets, Loader2 } from 'lucide-react';
+import { Droplets } from 'lucide-react';
 
 const familyColors: Record<string, string> = {
   Oriental: '#c49a5a',
@@ -37,9 +37,9 @@ export function FragranceCard({ fragrance, onClick, compact }: FragranceCardProp
       >
         <div className="w-10 h-14 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden shrink-0">
           {resolvedUrl ? (
-            <img src={resolvedUrl} alt={name} className="w-full h-full object-cover" />
+            <img src={resolvedUrl} alt={name} loading="lazy" className="w-full h-full object-cover" />
           ) : imageLoading ? (
-            <Loader2 size={14} className="text-txt-muted animate-spin" />
+            <div className="w-full h-full animate-pulse bg-gradient-to-br from-surface-2 via-border to-surface-2" />
           ) : (
             <Droplets size={16} className="text-txt-muted" />
           )}
@@ -64,9 +64,9 @@ export function FragranceCard({ fragrance, onClick, compact }: FragranceCardProp
       {/* Image */}
       <div className="aspect-[3/4] bg-surface-2 flex items-center justify-center overflow-hidden relative">
         {resolvedUrl ? (
-          <img src={resolvedUrl} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img src={resolvedUrl} alt={name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : imageLoading ? (
-          <Loader2 size={24} className="text-txt-muted animate-spin" />
+          <div className="w-full h-full animate-pulse bg-gradient-to-br from-surface-2 via-border to-surface-2" />
         ) : (
           <Droplets size={32} className="text-txt-muted" />
         )}

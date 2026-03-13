@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { computeStats } from '@/lib/stats';
 import { EmptyState } from '@/components/common';
 import type { Fragrance } from '@/lib/types';
-import { BarChart3, TrendingUp, Droplets, DollarSign, Star, Award } from 'lucide-react';
+import { BarChart3, TrendingUp, Droplets, DollarSign, Star, Award, Trophy, Heart } from 'lucide-react';
 
 const CHART_COLORS = ['#c9a96e', '#6a9a8a', '#a47a9a', '#c49a5a', '#baa44a', '#7a8aaa', '#c47a7a', '#8a6a4a', '#6a8aaa', '#9a9088'];
 
@@ -62,6 +62,26 @@ export function StatsPage({ fragrances }: StatsPageProps) {
           icon={<TrendingUp size={18} />}
           value={stats.avgPricePerMl > 0 ? `${stats.avgPricePerMl.toFixed(2)} €` : '—'}
           label="Ø Preis/ml"
+        />
+        <StatCard
+          icon={<Droplets size={18} />}
+          value={`${stats.avgFillLevel.toFixed(0)}%`}
+          label="Ø Füllstand"
+        />
+        <StatCard
+          icon={<Star size={18} />}
+          value={stats.unratedCount}
+          label="Unbewertet"
+        />
+        <StatCard
+          icon={<Trophy size={18} />}
+          value={stats.totalCount - stats.unratedCount > 0 ? stats.tierDistribution.filter(t => t.name !== 'Kein Tier').reduce((s, t) => s + t.count, 0) : 0}
+          label="Gerankt"
+        />
+        <StatCard
+          icon={<Heart size={18} />}
+          value={stats.wishlistCount}
+          label="Wunschliste"
         />
       </div>
 
@@ -152,6 +172,25 @@ export function StatsPage({ fragrances }: StatsPageProps) {
                   {stats.concentrationDistribution.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                   ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        )}
+
+        {/* Tier distribution */}
+        {stats.tierDistribution.length > 0 && (
+          <ChartCard title="Nach Tier">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={stats.tierDistribution} margin={{ left: 0, right: 16 }}>
+                <XAxis dataKey="name" tick={{ fill: '#9a9088', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(201,169,110,0.08)' }} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {stats.tierDistribution.map((entry, i) => {
+                    const tierColors: Record<string, string> = { S: '#c9a96e', A: '#6a9a8a', B: '#7a8aaa', C: '#9a9088', D: '#c47a7a', 'Kein Tier': '#3a342c' };
+                    return <Cell key={i} fill={tierColors[entry.name] || CHART_COLORS[i % CHART_COLORS.length]} />;
+                  })}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

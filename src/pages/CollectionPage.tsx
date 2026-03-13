@@ -12,16 +12,17 @@ interface CollectionPageProps {
   onUpdate: (id: string, updates: Partial<FragranceInput>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   existingIds?: Set<string>;
+  onToast?: (message: string) => void;
 }
 
-export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existingIds }: CollectionPageProps) {
+export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existingIds, onToast }: CollectionPageProps) {
   const [selected, setSelected] = useState<Fragrance | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [filterFamily, setFilterFamily] = useState('');
   const [filterBrand, setFilterBrand] = useState('');
-  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'rating' | 'price'>('recent');
+  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'name-desc' | 'rating' | 'rating-asc' | 'price' | 'price-asc' | 'fill'>('recent');
   const [showFilters, setShowFilters] = useState(false);
 
   const brands = useMemo(
@@ -35,7 +36,7 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
     if (search) {
       const q = search.toLowerCase();
       items = items.filter(
-        (f) => f.name.toLowerCase().includes(q) || f.brand.toLowerCase().includes(q)
+        (f) => f.name.toLowerCase().includes(q) || f.brand.toLowerCase().includes(q) || f.notes_text?.toLowerCase().includes(q)
       );
     }
     if (filterFamily) items = items.filter((f) => f.family === filterFamily);
@@ -45,11 +46,23 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
       case 'name':
         items.sort((a, b) => a.name.localeCompare(b.name));
         break;
+      case 'name-desc':
+        items.sort((a, b) => b.name.localeCompare(a.name));
+        break;
       case 'rating':
         items.sort((a, b) => (b.rating?.overall || 0) - (a.rating?.overall || 0));
         break;
+      case 'rating-asc':
+        items.sort((a, b) => (a.rating?.overall || 0) - (b.rating?.overall || 0));
+        break;
       case 'price':
         items.sort((a, b) => (b.purchase_price || 0) - (a.purchase_price || 0));
+        break;
+      case 'price-asc':
+        items.sort((a, b) => (a.purchase_price || 0) - (b.purchase_price || 0));
+        break;
+      case 'fill':
+        items.sort((a, b) => a.fill_level - b.fill_level);
         break;
       default:
         items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -85,7 +98,7 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Suchen..."
+              placeholder="Name, Marke oder Notizen..."
               className="flex-1"
             />
             <Button
@@ -132,8 +145,12 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
                 options={[
                   { value: 'recent', label: 'Neueste zuerst' },
                   { value: 'name', label: 'Name A–Z' },
+                  { value: 'name-desc', label: 'Name Z–A' },
                   { value: 'rating', label: 'Beste Bewertung' },
+                  { value: 'rating-asc', label: 'Schlechteste Bewertung' },
                   { value: 'price', label: 'Höchster Preis' },
+                  { value: 'price-asc', label: 'Niedrigster Preis' },
+                  { value: 'fill', label: 'Niedrigster Füllstand' },
                 ]}
               />
             </div>
@@ -179,6 +196,7 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
         onClose={() => setSelected(null)}
         onSave={onUpdate}
         onDelete={onDelete}
+        onToast={onToast}
       />
 
       <AddFragranceModal

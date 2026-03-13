@@ -8,7 +8,7 @@ import type { FragellaSearchResult } from './types';
 const PERFUMAPI_URL = import.meta.env.VITE_PERFUMAPI_URL || '';
 
 export class FragellaAPI {
-  constructor(_unused?: string) { }
+  constructor() { }
 
   async search(query: string, limit = 10): Promise<FragellaSearchResult[]> {
     if (!PERFUMAPI_URL) {
@@ -70,7 +70,7 @@ export class FragellaAPI {
 
 let instance: FragellaAPI | null = null;
 
-export function getFragellaAPI(_unused?: string): FragellaAPI | null {
+export function getFragellaAPI(): FragellaAPI | null {
   if (!instance) {
     instance = new FragellaAPI();
   }

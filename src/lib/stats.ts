@@ -63,6 +63,28 @@ export function computeStats(fragrances: Fragrance[]): CollectionStats {
     return ppm < minPpm ? f : min;
   }, null);
 
+  // Tier distribution
+  const tierMap = new Map<string, number>();
+  owned.forEach((f) => {
+    const t = f.tier || 'Kein Tier';
+    tierMap.set(t, (tierMap.get(t) || 0) + 1);
+  });
+  const tierOrder = ['S', 'A', 'B', 'C', 'D', 'Kein Tier'];
+  const tierDistribution = tierOrder
+    .filter((t) => tierMap.has(t))
+    .map((t) => ({ name: t, count: tierMap.get(t)! }));
+
+  // Average fill level
+  const avgFillLevel = owned.length > 0
+    ? owned.reduce((sum, f) => sum + f.fill_level, 0) / owned.length
+    : 0;
+
+  // Unrated count
+  const unratedCount = owned.filter((f) => !f.rating?.overall).length;
+
+  // Wishlist count
+  const wishlistCount = fragrances.filter((f) => f.is_wishlist).length;
+
   return {
     totalCount: owned.length,
     totalPurchaseValue,
@@ -76,5 +98,9 @@ export function computeStats(fragrances: Fragrance[]): CollectionStats {
     recentlyAdded,
     mostExpensive,
     cheapestPerMl,
+    tierDistribution,
+    avgFillLevel,
+    unratedCount,
+    wishlistCount,
   };
 }

@@ -101,6 +101,10 @@ export interface CollectionStats {
   recentlyAdded: Fragrance[];
   mostExpensive: Fragrance | null;
   cheapestPerMl: Fragrance | null;
+  tierDistribution: { name: string; count: number }[];
+  avgFillLevel: number;
+  unratedCount: number;
+  wishlistCount: number;
 }
 
 // === Auth Types ===

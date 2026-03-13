@@ -3,7 +3,7 @@ import { FragranceCard } from '@/components/Collection/FragranceCard';
 import { AddFragranceModal } from '@/components/Search/AddFragranceModal';
 import { Button, Input, Select, EmptyState } from '@/components/common';
 import type { Fragrance, FragranceInput } from '@/lib/types';
-import { Heart, Plus, ArrowRight, Trash2, Filter } from 'lucide-react';
+import { Heart, Plus, ArrowRight, Trash2, Filter, Loader2 } from 'lucide-react';
 
 interface WishlistPageProps {
   wishlist: Fragrance[];
@@ -11,13 +11,62 @@ interface WishlistPageProps {
   onMoveToCollection: (id: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   existingIds?: Set<string>;
+  onToast?: (message: string) => void;
 }
 
-export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, existingIds }: WishlistPageProps) {
+function WishlistItem({ fragrance: f, expanded, onToggle, onMove, onDelete, onToast, onClearAction }: {
+  fragrance: Fragrance;
+  expanded: boolean;
+  onToggle: () => void;
+  onMove: (id: string) => Promise<boolean>;
+  onDelete: (id: string) => Promise<boolean>;
+  onToast?: (message: string) => void;
+  onClearAction: () => void;
+}) {
+  const [moving, setMoving] = useState(false);
+
+  return (
+    <div className="flex items-center gap-3 p-3 bg-surface border border-border rounded-sm">
+      <div className="flex-1 min-w-0">
+        <FragranceCard fragrance={f} onClick={onToggle} compact />
+      </div>
+      <div className="flex gap-2 shrink-0">
+        <Button
+          size="sm"
+          onClick={async () => {
+            setMoving(true);
+            const success = await onMove(f.id);
+            if (success) onToast?.(`${f.name} zur Sammlung verschoben`);
+            setMoving(false);
+          }}
+          disabled={moving}
+          title="Zur Sammlung verschieben"
+        >
+          {moving ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+          <span className="hidden sm:inline">Gekauft</span>
+        </Button>
+        {expanded && (
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={async () => {
+              await onDelete(f.id);
+              onClearAction();
+            }}
+          >
+            <Trash2 size={14} />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, existingIds, onToast }: WishlistPageProps) {
   const [addOpen, setAddOpen] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'price'>('recent');
+  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'name-desc' | 'price' | 'price-asc'>('recent');
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = useMemo(() => {
@@ -26,7 +75,7 @@ export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, ex
     if (search) {
       const q = search.toLowerCase();
       items = items.filter(
-        (f) => f.name.toLowerCase().includes(q) || f.brand.toLowerCase().includes(q)
+        (f) => f.name.toLowerCase().includes(q) || f.brand.toLowerCase().includes(q) || f.notes_text?.toLowerCase().includes(q)
       );
     }
 
@@ -34,8 +83,14 @@ export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, ex
       case 'name':
         items.sort((a, b) => a.name.localeCompare(b.name));
         break;
+      case 'name-desc':
+        items.sort((a, b) => b.name.localeCompare(a.name));
+        break;
       case 'price':
         items.sort((a, b) => (b.market_price || 0) - (a.market_price || 0));
+        break;
+      case 'price-asc':
+        items.sort((a, b) => (a.market_price || 0) - (b.market_price || 0));
         break;
       default:
         items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -89,7 +144,9 @@ export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, ex
               options={[
                 { value: 'recent', label: 'Neueste zuerst' },
                 { value: 'name', label: 'Name A–Z' },
+                { value: 'name-desc', label: 'Name Z–A' },
                 { value: 'price', label: 'Höchster Marktwert' },
+                { value: 'price-asc', label: 'Niedrigster Marktwert' },
               ]}
             />
           )}
@@ -99,40 +156,16 @@ export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, ex
       {filtered.length > 0 ? (
         <div className="space-y-2">
           {filtered.map((f) => (
-            <div
+            <WishlistItem
               key={f.id}
-              className="flex items-center gap-3 p-3 bg-surface border border-border rounded-sm"
-            >
-              <div className="flex-1 min-w-0">
-                <FragranceCard fragrance={f} onClick={() => setActionId(actionId === f.id ? null : f.id)} compact />
-              </div>
-
-              {actionId === f.id && (
-                <div className="flex gap-2 shrink-0">
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      await onMoveToCollection(f.id);
-                      setActionId(null);
-                    }}
-                    title="Zur Sammlung verschieben"
-                  >
-                    <ArrowRight size={14} />
-                    Gekauft
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={async () => {
-                      await onDelete(f.id);
-                      setActionId(null);
-                    }}
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
-              )}
-            </div>
+              fragrance={f}
+              expanded={actionId === f.id}
+              onToggle={() => setActionId(actionId === f.id ? null : f.id)}
+              onMove={onMoveToCollection}
+              onDelete={onDelete}
+              onToast={onToast}
+              onClearAction={() => setActionId(null)}
+            />
           ))}
         </div>
       ) : wishlist.length === 0 ? (
