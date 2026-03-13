@@ -167,7 +167,7 @@ export function StatsPage({ fragrances }: StatsPageProps) {
                 />
                 <YAxis hide />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(201,169,110,0.08)' }} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]} label={{ position: 'top', fill: '#e8e0d4', fontSize: 12, fontWeight: 600 }}>
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} label={{ position: 'center', fill: '#0e0c0b', fontSize: 12, fontWeight: 700 }}>
                   {stats.tierDistribution.map((entry, i) => (
                     <Cell key={i} fill={TIER_COLORS[entry.name] || '#3a342c'} />
                   ))}
@@ -211,7 +211,7 @@ export function StatsPage({ fragrances }: StatsPageProps) {
                 <XAxis dataKey="name" tick={{ fill: '#9a9088', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(201,169,110,0.08)' }} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} label={{ position: 'center', fill: '#0e0c0b', fontSize: 12, fontWeight: 700 }}>
                   {stats.priceRanges.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                   ))}
