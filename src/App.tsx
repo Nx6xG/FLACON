@@ -9,6 +9,7 @@ import { RankingPage } from '@/pages/RankingPage';
 import { WishlistPage } from '@/pages/WishlistPage';
 import { StatsPage } from '@/pages/StatsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { SharePage } from '@/pages/SharePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { FragranceDetail } from '@/components/Collection/FragranceDetail';
 import { useToast, ToastContainer } from '@/components/common';
@@ -74,6 +75,17 @@ export default function App() {
       await addFragrance(input as FragranceInput);
     }
   };
+
+  // Public share route — accessible without auth
+  if (window.location.pathname.startsWith('/share/')) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/share/:code" element={<SharePage />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
 
   // Loading state
   if (authLoading) {
@@ -150,6 +162,7 @@ export default function App() {
                 element={
                   <SettingsPage
                     profile={profile}
+                    userId={user.id}
                     fragrances={fragrances}
                     onUpdateProfile={updateProfile}
                     onImport={handleImport}
