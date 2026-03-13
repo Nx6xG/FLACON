@@ -181,7 +181,7 @@ export function AddFragranceModal({ open, onClose, onAdd, isWishlist, existingId
 
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {results.map((r) => {
-              const alreadyOwned = existingIds?.has(r.id) || addedIds.has(r.id);
+              const alreadyOwned = existingIds?.has(`${r.name.toLowerCase()}::${r.brand.toLowerCase()}`) || addedIds.has(r.id);
               return (
                 <button
                   key={r.id}

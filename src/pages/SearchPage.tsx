@@ -125,7 +125,7 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         {sortedResults.map((r) => {
-          const alreadyOwned = existingIds.has(r.id);
+          const alreadyOwned = existingIds.has(`${r.name.toLowerCase()}::${r.brand.toLowerCase()}`);
           const justAdded = addedIds.has(r.id);
           const isAdding = adding === r.id;
 

@@ -94,6 +94,7 @@ export interface CollectionStats {
   totalMarketValue: number;
   avgRating: number;
   avgPricePerMl: number;
+  totalMl: number;
   brandDistribution: { name: string; count: number }[];
   familyDistribution: { name: string; count: number }[];
   concentrationDistribution: { name: string; count: number }[];
@@ -105,6 +106,18 @@ export interface CollectionStats {
   avgFillLevel: number;
   unratedCount: number;
   wishlistCount: number;
+  topNotes: { name: string; count: number }[];
+  avgRatingBreakdown: {
+    sillage: number;
+    longevity: number;
+    uniqueness: number;
+    value: number;
+    compliments: number;
+    versatility: number;
+  } | null;
+  fillBuckets: { name: string; count: number }[];
+  priceRanges: { name: string; count: number }[];
+  timeline: { name: string; count: number }[];
 }
 
 // === Auth Types ===

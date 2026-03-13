@@ -32,10 +32,11 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  footer?: ReactNode;
   wide?: boolean;
 }
 
-export function Modal({ open, onClose, title, children, wide }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, wide }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +102,7 @@ export function Modal({ open, onClose, title, children, wide }: ModalProps) {
           </button>
         </div>
         <div className="p-4 overflow-y-auto flex-1">{children}</div>
+        {footer && <div className="p-4 border-t border-border shrink-0">{footer}</div>}
       </div>
     </div>
   );

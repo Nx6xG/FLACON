@@ -19,6 +19,9 @@ export function computeStats(fragrances: Fragrance[]): CollectionStats {
         withPriceMl.length
       : 0;
 
+  // Total ml
+  const totalMl = owned.reduce((sum, f) => sum + (f.size_ml || 0), 0);
+
   // Brand distribution
   const brandMap = new Map<string, number>();
   owned.forEach((f) => brandMap.set(f.brand, (brandMap.get(f.brand) || 0) + 1));
@@ -85,12 +88,65 @@ export function computeStats(fragrances: Fragrance[]): CollectionStats {
   // Wishlist count
   const wishlistCount = fragrances.filter((f) => f.is_wishlist).length;
 
+  // Top notes frequency
+  const noteMap = new Map<string, number>();
+  owned.forEach((f) => f.notes.forEach((n) => noteMap.set(n.name, (noteMap.get(n.name) || 0) + 1)));
+  const topNotes = Array.from(noteMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  // Average rating breakdown
+  const avgRatingBreakdown = rated.length > 0 ? {
+    sillage: rated.reduce((s, f) => s + (f.rating?.sillage || 0), 0) / rated.length,
+    longevity: rated.reduce((s, f) => s + (f.rating?.longevity || 0), 0) / rated.length,
+    uniqueness: rated.reduce((s, f) => s + (f.rating?.uniqueness || 0), 0) / rated.length,
+    value: rated.reduce((s, f) => s + (f.rating?.value || 0), 0) / rated.length,
+    compliments: rated.reduce((s, f) => s + (f.rating?.compliments || 0), 0) / rated.length,
+    versatility: rated.reduce((s, f) => s + (f.rating?.versatility || 0), 0) / rated.length,
+  } : null;
+
+  // Fill level distribution
+  const fillBuckets = [
+    { name: 'Leer (0–10%)', count: owned.filter((f) => f.fill_level <= 10).length },
+    { name: 'Niedrig (11–25%)', count: owned.filter((f) => f.fill_level > 10 && f.fill_level <= 25).length },
+    { name: 'Halb (26–50%)', count: owned.filter((f) => f.fill_level > 25 && f.fill_level <= 50).length },
+    { name: 'Gut (51–75%)', count: owned.filter((f) => f.fill_level > 50 && f.fill_level <= 75).length },
+    { name: 'Voll (76–100%)', count: owned.filter((f) => f.fill_level > 75).length },
+  ].filter((b) => b.count > 0);
+
+  // Price range distribution
+  const withPrice = owned.filter((f) => f.purchase_price);
+  const priceRanges = withPrice.length > 0 ? [
+    { name: '0–50 €', count: withPrice.filter((f) => f.purchase_price! <= 50).length },
+    { name: '51–100 €', count: withPrice.filter((f) => f.purchase_price! > 50 && f.purchase_price! <= 100).length },
+    { name: '101–200 €', count: withPrice.filter((f) => f.purchase_price! > 100 && f.purchase_price! <= 200).length },
+    { name: '201–300 €', count: withPrice.filter((f) => f.purchase_price! > 200 && f.purchase_price! <= 300).length },
+    { name: '300+ €', count: withPrice.filter((f) => f.purchase_price! > 300).length },
+  ].filter((b) => b.count > 0) : [];
+
+  // Collection timeline (monthly additions)
+  const monthMap = new Map<string, number>();
+  owned.forEach((f) => {
+    const d = new Date(f.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthMap.set(key, (monthMap.get(key) || 0) + 1);
+  });
+  const timeline = Array.from(monthMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, count]) => {
+      const [y, m] = month.split('-');
+      const label = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+      return { name: label, count };
+    });
+
   return {
     totalCount: owned.length,
     totalPurchaseValue,
     totalMarketValue,
     avgRating,
     avgPricePerMl,
+    totalMl,
     brandDistribution,
     familyDistribution,
     concentrationDistribution,
@@ -102,5 +158,10 @@ export function computeStats(fragrances: Fragrance[]): CollectionStats {
     avgFillLevel,
     unratedCount,
     wishlistCount,
+    topNotes,
+    avgRatingBreakdown,
+    fillBuckets,
+    priceRanges,
+    timeline,
   };
 }

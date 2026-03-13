@@ -36,8 +36,8 @@ export default function App() {
     if (collectionError) showToast(`Fehler: ${collectionError}`);
   }, [collectionError, showToast]);
 
-  const existingFragellaIds = useMemo(
-    () => new Set(fragrances.filter((f) => f.fragella_id).map((f) => f.fragella_id!)),
+  const existingKeys = useMemo(
+    () => new Set(fragrances.map((f) => `${f.name.toLowerCase()}::${f.brand.toLowerCase()}`)),
     [fragrances]
   );
 
@@ -108,7 +108,7 @@ export default function App() {
                     onAdd={addWithToast}
                     onUpdate={updateFragrance}
                     onDelete={deleteWithUndo}
-                    existingIds={existingFragellaIds}
+                    existingIds={existingKeys}
                     onToast={showToast}
                   />
                 }
@@ -118,7 +118,7 @@ export default function App() {
                 element={
                   <SearchPage
                     onAdd={addWithToast}
-                    existingIds={existingFragellaIds}
+                    existingIds={existingKeys}
                   />
                 }
               />
@@ -140,7 +140,7 @@ export default function App() {
                     onAdd={addWithToast}
                     onMoveToCollection={handleMoveToCollection}
                     onDelete={deleteWithUndo}
-                    existingIds={existingFragellaIds}
+                    existingIds={existingKeys}
                     onToast={showToast}
                   />
                 }

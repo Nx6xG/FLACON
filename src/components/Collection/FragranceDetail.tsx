@@ -145,7 +145,26 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={name || fragrance.name} wide>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={name || fragrance.name}
+      wide
+      footer={
+        <div className="flex items-center justify-between">
+          <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting}>
+            <Trash2 size={14} />
+            {confirmDelete ? 'Wirklich löschen?' : 'Löschen'}
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? 'Speichert...' : 'Speichern'}
+            </Button>
+          </div>
+        </div>
+      }
+    >
       {/* Header with image and basic info */}
       <div className="flex gap-4 mb-6">
         <div className="w-20 h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden shrink-0">
@@ -333,19 +352,6 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
         />
       )}
 
-      {/* Actions */}
-      <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
-        <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting}>
-          <Trash2 size={14} />
-          {confirmDelete ? 'Wirklich löschen?' : 'Löschen'}
-        </Button>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Speichert...' : 'Speichern'}
-          </Button>
-        </div>
-      </div>
     </Modal>
   );
 }
