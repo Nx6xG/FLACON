@@ -71,6 +71,7 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
       rating: null,
       tier: null,
       tier_rank: null,
+      occasions: [],
       notes_text: '',
       is_wishlist: isWishlist,
       fragella_id: result.id,

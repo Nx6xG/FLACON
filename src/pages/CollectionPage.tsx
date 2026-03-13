@@ -6,7 +6,9 @@ import { AddFragranceModal } from '@/components/Search/AddFragranceModal';
 import { Button, Input, Select, EmptyState } from '@/components/common';
 import type { Fragrance, FragranceInput } from '@/lib/types';
 import { RandomPicker } from '@/components/Collection/RandomPicker';
-import { Plus, Library, LayoutGrid, List, Filter, Share2, Dices } from 'lucide-react';
+import { FragranceQuiz } from '@/components/Collection/FragranceQuiz';
+import { WeatherRecommendation } from '@/components/Collection/WeatherRecommendation';
+import { Plus, Library, LayoutGrid, List, Filter, Share2, Dices, HelpCircle, Star, Layers } from 'lucide-react';
 
 interface CollectionPageProps {
   collection: Fragrance[];
@@ -47,6 +49,8 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'name-desc' | 'rating' | 'rating-asc' | 'price' | 'price-asc' | 'ppm' | 'ppm-desc' | 'fill'>('recent');
   const [showFilters, setShowFilters] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [filterOccasion, setFilterOccasion] = useState('');
 
   const brands = useMemo(
     () => [...new Set(collection.map((f) => f.brand))].sort(),
@@ -70,6 +74,7 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
     if (filterFamily) items = items.filter((f) => f.family === filterFamily);
     if (filterBrand) items = items.filter((f) => f.brand === filterBrand);
     if (filterNote) items = items.filter((f) => f.notes.some((n) => n.name === filterNote));
+    if (filterOccasion) items = items.filter((f) => f.occasions?.includes(filterOccasion));
 
     switch (sortBy) {
       case 'name':
@@ -108,7 +113,7 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
     }
 
     return items;
-  }, [collection, search, filterFamily, filterBrand, filterNote, sortBy]);
+  }, [collection, search, filterFamily, filterBrand, filterNote, filterOccasion, sortBy]);
 
   const totalValue = collection.reduce((sum, f) => sum + (f.purchase_price || 0), 0);
 
@@ -126,14 +131,24 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
         </div>
         <div className="flex gap-2">
           {collection.length >= 2 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPickerOpen(true)}
-              title="Zufälliger Duft"
-            >
-              <Dices size={14} />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setQuizOpen(true)}
+                title="Duft-Quiz"
+              >
+                <HelpCircle size={14} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPickerOpen(true)}
+                title="Zufälliger Duft"
+              >
+                <Dices size={14} />
+              </Button>
+            </>
           )}
           {shareUrl && (
             <Button
@@ -183,7 +198,7 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <Select
                 value={filterFamily}
                 onChange={(e) => setFilterFamily(e.target.value)}
@@ -214,6 +229,14 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
                 />
               )}
               <Select
+                value={filterOccasion}
+                onChange={(e) => setFilterOccasion(e.target.value)}
+                options={[
+                  { value: '', label: 'Alle Anlässe' },
+                  ...['Date Night', 'Office', 'Party', 'Sport', 'Formal', 'Alltag'].map((o) => ({ value: o, label: o })),
+                ]}
+              />
+              <Select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
                 options={[
@@ -234,8 +257,48 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
         </div>
       )}
 
+      {/* Progress banner */}
+      {!loading && collection.length > 0 && (() => {
+        const unrated = collection.filter((f) => !f.rating?.overall).length;
+        const untier = collection.filter((f) => !f.tier).length;
+        if (unrated === 0 && untier === 0) return null;
+        return (
+          <div className="flex items-center gap-3 mb-4 p-3 bg-surface border border-border rounded-lg">
+            <div className="flex items-center gap-4 flex-1 flex-wrap">
+              {unrated > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Star size={12} className="text-txt-muted" />
+                  <span className="text-xs text-txt-muted">
+                    <span className="text-gold font-semibold">{unrated}</span> unbewertet
+                  </span>
+                </div>
+              )}
+              {untier > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Layers size={12} className="text-txt-muted" />
+                  <span className="text-xs text-txt-muted">
+                    <span className="text-gold font-semibold">{untier}</span> ohne Tier
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="h-1.5 flex-1 max-w-[120px] bg-surface-2 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gold/60 rounded-full transition-all"
+                style={{ width: `${((collection.length - unrated) / collection.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Weather recommendation */}
+      {!loading && collection.length >= 3 && !search && !filterFamily && !filterBrand && !filterNote && !filterOccasion && (
+        <WeatherRecommendation collection={collection} onClick={setSelected} />
+      )}
+
       {/* Fragrance of the Day */}
-      {!loading && collection.length >= 3 && !search && !filterFamily && !filterBrand && !filterNote && (
+      {!loading && collection.length >= 3 && !search && !filterFamily && !filterBrand && !filterNote && !filterOccasion && (
         <FragranceOfTheDay collection={collection} onClick={setSelected} />
       )}
 
@@ -297,6 +360,13 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
       <RandomPicker
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
+        collection={collection}
+        onSelect={setSelected}
+      />
+
+      <FragranceQuiz
+        open={quizOpen}
+        onClose={() => setQuizOpen(false)}
         collection={collection}
         onSelect={setSelected}
       />

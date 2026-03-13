@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Button, Input, Textarea, Select, StarRating, TierBadge } from '@/components/common';
 import { RadarChart } from '@/components/Rating/RadarChart';
 import { useImageFetch } from '@/hooks/useImageFetch';
-import type { Fragrance, FragranceInput, FragranceNote, Concentration, FragranceFamily, Season, Tier, RatingDetails } from '@/lib/types';
+import type { Fragrance, FragranceInput, FragranceNote, Concentration, FragranceFamily, Season, Occasion, Tier, RatingDetails } from '@/lib/types';
 import { Trash2, Droplets, Loader2, Pencil, SprayCan } from 'lucide-react';
 
 const concentrationOptions: { value: Concentration; label: string }[] = [
@@ -36,6 +36,15 @@ const seasonOptions: { value: Season; label: string }[] = [
   { value: 'Herbst', label: 'Herbst' },
   { value: 'Winter', label: 'Winter' },
   { value: 'Ganzjährig', label: 'Ganzjährig' },
+];
+
+const occasionOptions: { value: Occasion; label: string; emoji: string }[] = [
+  { value: 'Date Night', label: 'Date Night', emoji: '💕' },
+  { value: 'Office', label: 'Office', emoji: '💼' },
+  { value: 'Party', label: 'Party', emoji: '🎉' },
+  { value: 'Sport', label: 'Sport', emoji: '🏃' },
+  { value: 'Formal', label: 'Formal', emoji: '👔' },
+  { value: 'Alltag', label: 'Alltag', emoji: '☀️' },
 ];
 
 const tiers: (Tier | '')[] = ['', 'S', 'A', 'B', 'C', 'D'];
@@ -162,6 +171,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
   const [sizeMl, setSizeMl] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
   const [season, setSeason] = useState<Season[]>(['Ganzjährig']);
+  const [occasions, setOccasions] = useState<string[]>([]);
   const [notesText, setNotesText] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -189,6 +199,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
       setSizeMl(fragrance.size_ml?.toString() || '');
       setPurchaseDate(fragrance.purchase_date || '');
       setSeason(fragrance.season?.length ? fragrance.season : ['Ganzjährig']);
+      setOccasions(fragrance.occasions || []);
       setNotesText(fragrance.notes_text || '');
       setTab('info');
       setEditing(false);
@@ -206,6 +217,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
       concentration,
       family,
       season,
+      occasions,
       rating: rating.overall > 0 ? rating : null,
       tier: tier || null,
       fill_level: fillLevel,
@@ -442,6 +454,33 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
                       }`}
                     >
                       {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="col-span-2">
+              <span className="text-xs text-txt-muted uppercase tracking-wider">Anlass</span>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {occasionOptions.map((o) => {
+                  const active = occasions.includes(o.value);
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => {
+                        setOccasions(active
+                          ? occasions.filter((v) => v !== o.value)
+                          : [...occasions, o.value]
+                        );
+                      }}
+                      className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                        active
+                          ? 'bg-gold/15 border-gold/30 text-gold'
+                          : 'bg-surface-2 border-border text-txt-muted hover:border-border-light'
+                      }`}
+                    >
+                      {o.emoji} {o.label}
                     </button>
                   );
                 })}

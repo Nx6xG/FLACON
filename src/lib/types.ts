@@ -19,6 +19,8 @@ export type FragranceFamily =
 
 export type Season = 'Frühling' | 'Sommer' | 'Herbst' | 'Winter' | 'Ganzjährig';
 
+export type Occasion = 'Date Night' | 'Office' | 'Party' | 'Sport' | 'Formal' | 'Alltag';
+
 export type Tier = 'S' | 'A' | 'B' | 'C' | 'D';
 
 export interface FragranceNote {
@@ -55,6 +57,7 @@ export interface Fragrance {
   rating: RatingDetails | null;
   tier: Tier | null;
   tier_rank: number | null; // position within tier
+  occasions: string[]; // occasion tags
   notes_text: string; // personal notes
   is_wishlist: boolean;
   fragella_id: string | null; // external API reference
