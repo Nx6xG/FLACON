@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { useMemo } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, Cell } from 'recharts';
 import { computeStats } from '@/lib/stats';
 import { EmptyState } from '@/components/common';
 import { RadarChart } from '@/components/Rating/RadarChart';
 import type { Fragrance, RatingDetails } from '@/lib/types';
-import { BarChart3, Droplets, Star, Award, TrendingUp, Heart, Trophy, Flame, Wind, Sparkles } from 'lucide-react';
+import { BarChart3, Droplets, Star, Award, TrendingUp, Heart, Trophy, Flame, Sparkles } from 'lucide-react';
 
 const CHART_COLORS = ['#c9a96e', '#6a9a8a', '#a47a9a', '#c49a5a', '#baa44a', '#7a8aaa', '#c47a7a', '#8a6a4a', '#6a8aaa', '#9a9088'];
 
@@ -23,8 +23,6 @@ interface StatsPageProps {
 
 export function StatsPage({ fragrances }: StatsPageProps) {
   const stats = useMemo(() => computeStats(fragrances), [fragrances]);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
-
   if (stats.totalCount === 0) {
     return (
       <div>
@@ -77,9 +75,9 @@ export function StatsPage({ fragrances }: StatsPageProps) {
           accent
         />
         <HeroCard
-          value={stats.totalMl > 0 ? `${(stats.totalMl / 1000).toFixed(1)} L` : '—'}
-          label="Gesamtvolumen"
-          sub={stats.totalMl > 0 ? `${stats.totalMl} ml` : undefined}
+          value={stats.totalCount.toString()}
+          label="Düfte"
+          sub={stats.wishlistCount > 0 ? `+ ${stats.wishlistCount} Wunschliste` : undefined}
         />
       </div>
 
@@ -129,48 +127,6 @@ export function StatsPage({ fragrances }: StatsPageProps) {
 
       {/* === Charts Grid === */}
       <div className="grid md:grid-cols-2 gap-4 mt-4">
-        {/* Family Donut */}
-        {stats.familyDistribution.length > 0 && (
-          <SectionCard title="Duftfamilien" icon={<Wind size={16} />}>
-            <div className="flex items-center gap-4">
-              <div className="w-[140px] h-[140px] shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stats.familyDistribution}
-                      dataKey="count"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={65}
-                      innerRadius={35}
-                      strokeWidth={2}
-                      stroke="#0e0c0b"
-                    >
-                      {stats.familyDistribution.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                {stats.familyDistribution.slice(0, 6).map((item, i) => (
-                  <div key={item.name} className="flex items-center gap-2 text-xs">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                    <span className="text-txt-muted truncate flex-1">{item.name}</span>
-                    <span className="text-txt font-medium">{item.count}</span>
-                  </div>
-                ))}
-                {stats.familyDistribution.length > 6 && (
-                  <span className="text-[10px] text-txt-muted">+{stats.familyDistribution.length - 6} weitere</span>
-                )}
-              </div>
-            </div>
-          </SectionCard>
-        )}
-
         {/* Brands */}
         {stats.brandDistribution.length > 0 && (
           <SectionCard title="Marken" icon={<Sparkles size={16} />}>
@@ -197,27 +153,27 @@ export function StatsPage({ fragrances }: StatsPageProps) {
         {/* Tier Distribution */}
         {stats.tierDistribution.length > 0 && (
           <SectionCard title="Tier-Verteilung" icon={<Trophy size={16} />}>
-            <div className="flex items-end gap-2 h-[140px] px-2">
-              {stats.tierDistribution.map((tier) => {
-                const maxCount = Math.max(...stats.tierDistribution.map((t) => t.count));
-                const pct = maxCount > 0 ? (tier.count / maxCount) * 100 : 0;
-                return (
-                  <div key={tier.name} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-xs font-semibold text-txt">{tier.count}</span>
-                    <div className="w-full rounded-t-sm relative" style={{ height: `${Math.max(pct, 8)}%`, backgroundColor: TIER_COLORS[tier.name] || '#3a342c' }}>
-                      {tier.name !== 'Kein Tier' && (
-                        <div className="absolute inset-0 rounded-t-sm opacity-20" style={{
-                          background: `linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%)`,
-                        }} />
-                      )}
-                    </div>
-                    <span className="text-[10px] font-bold" style={{ color: TIER_COLORS[tier.name] || '#9a9088' }}>
-                      {tier.name === 'Kein Tier' ? '—' : tier.name}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={stats.tierDistribution} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+                <XAxis
+                  dataKey="name"
+                  tick={({ x, y, payload }: any) => (
+                    <text x={x} y={y + 12} textAnchor="middle" fontSize={12} fontWeight="bold" fill={TIER_COLORS[payload.value] || '#9a9088'}>
+                      {payload.value === 'Kein Tier' ? '—' : payload.value}
+                    </text>
+                  )}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(201,169,110,0.08)' }} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} label={{ position: 'top', fill: '#e8e0d4', fontSize: 12, fontWeight: 600 }}>
+                  {stats.tierDistribution.map((entry, i) => (
+                    <Cell key={i} fill={TIER_COLORS[entry.name] || '#3a342c'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </SectionCard>
         )}
 
