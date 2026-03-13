@@ -73,7 +73,9 @@ export function useCollection(userId: string | undefined) {
       return null;
     }
 
-    return data as Fragrance;
+    const added = data as Fragrance;
+    setFragrances((prev) => [added, ...prev]);
+    return added;
   };
 
   const updateFragrance = async (
@@ -90,6 +92,10 @@ export function useCollection(userId: string | undefined) {
       setError(err.message);
       return false;
     }
+
+    setFragrances((prev) =>
+      prev.map((f) => f.id === id ? { ...f, ...updates, updated_at: new Date().toISOString() } as Fragrance : f)
+    );
     return true;
   };
 
@@ -104,6 +110,8 @@ export function useCollection(userId: string | undefined) {
       setError(err.message);
       return false;
     }
+
+    setFragrances((prev) => prev.filter((f) => f.id !== id));
     return true;
   };
 

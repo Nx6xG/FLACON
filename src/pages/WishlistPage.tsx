@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { FragranceCard } from '@/components/Collection/FragranceCard';
 import { AddFragranceModal } from '@/components/Search/AddFragranceModal';
-import { Button, EmptyState } from '@/components/common';
+import { Button, Input, Select, EmptyState } from '@/components/common';
 import type { Fragrance, FragranceInput } from '@/lib/types';
-import { Heart, Plus, ArrowRight, Trash2 } from 'lucide-react';
+import { Heart, Plus, ArrowRight, Trash2, Filter } from 'lucide-react';
 
 interface WishlistPageProps {
   wishlist: Fragrance[];
@@ -16,6 +16,33 @@ interface WishlistPageProps {
 export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, existingIds }: WishlistPageProps) {
   const [addOpen, setAddOpen] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'price'>('recent');
+  const [showFilters, setShowFilters] = useState(false);
+
+  const filtered = useMemo(() => {
+    let items = [...wishlist];
+
+    if (search) {
+      const q = search.toLowerCase();
+      items = items.filter(
+        (f) => f.name.toLowerCase().includes(q) || f.brand.toLowerCase().includes(q)
+      );
+    }
+
+    switch (sortBy) {
+      case 'name':
+        items.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'price':
+        items.sort((a, b) => (b.market_price || 0) - (a.market_price || 0));
+        break;
+      default:
+        items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+
+    return items;
+  }, [wishlist, search, sortBy]);
 
   const totalMarketValue = wishlist.reduce((sum, f) => sum + (f.market_price || 0), 0);
 
@@ -36,9 +63,42 @@ export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, ex
         </Button>
       </div>
 
-      {wishlist.length > 0 ? (
+      {wishlist.length > 0 && (
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="flex gap-2">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Suchen..."
+              className="flex-1"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className={showFilters ? '!border-gold-dim !text-gold' : ''}
+            >
+              <Filter size={14} />
+            </Button>
+          </div>
+
+          {showFilters && (
+            <Select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              options={[
+                { value: 'recent', label: 'Neueste zuerst' },
+                { value: 'name', label: 'Name A–Z' },
+                { value: 'price', label: 'Höchster Marktwert' },
+              ]}
+            />
+          )}
+        </div>
+      )}
+
+      {filtered.length > 0 ? (
         <div className="space-y-2">
-          {wishlist.map((f) => (
+          {filtered.map((f) => (
             <div
               key={f.id}
               className="flex items-center gap-3 p-3 bg-surface border border-border rounded-sm"
@@ -75,7 +135,7 @@ export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, ex
             </div>
           ))}
         </div>
-      ) : (
+      ) : wishlist.length === 0 ? (
         <EmptyState
           icon={<Heart size={48} />}
           title="Wunschliste ist leer"
@@ -87,6 +147,8 @@ export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, ex
             </Button>
           }
         />
+      ) : (
+        <p className="text-center text-txt-muted py-12">Keine Ergebnisse für "{search}".</p>
       )}
 
       <AddFragranceModal

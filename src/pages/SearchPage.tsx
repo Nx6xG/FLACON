@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useFragellaSearch } from '@/hooks/useFragellaSearch';
 import { Button, Input } from '@/components/common';
+import { mapConcentration, mapFamily } from '@/lib/mappers';
 import type { FragranceInput, FragellaSearchResult } from '@/lib/types';
 import { Search, Plus, Loader2, Droplets, Check } from 'lucide-react';
 
@@ -32,8 +33,8 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
     const input: FragranceInput = {
       name: result.name,
       brand: result.brand,
-      concentration: 'EdP',
-      family: 'Other',
+      concentration: mapConcentration(result.concentration),
+      family: mapFamily(result.accords),
       season: ['Ganzjährig'],
       notes,
       image_url: result.image,
@@ -156,6 +157,15 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
         <p className="text-center text-txt-muted py-12">
           Keine Ergebnisse für "{query}". Versuche andere Suchbegriffe.
         </p>
+      )}
+
+      {!loading && results.length === 0 && !query && (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Search size={48} className="text-txt-muted mb-4" />
+          <p className="text-sm text-txt-muted max-w-sm">
+            Durchsuche die Parfum-Datenbank nach Name oder Marke und füge Düfte zu deiner Sammlung oder Wunschliste hinzu.
+          </p>
+        </div>
       )}
     </div>
   );

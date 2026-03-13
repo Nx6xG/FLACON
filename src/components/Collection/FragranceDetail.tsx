@@ -3,11 +3,33 @@ import { Modal, Button, Input, Textarea, Select, StarRating, TierBadge } from '@
 import { RadarChart } from '@/components/Rating/RadarChart';
 import { useImageFetch } from '@/hooks/useImageFetch';
 import type { Fragrance, FragranceInput, Concentration, FragranceFamily, Season, Tier, RatingDetails } from '@/lib/types';
-import { Trash2, ExternalLink, Droplets, Loader2 } from 'lucide-react';
+import { Trash2, Droplets, Loader2 } from 'lucide-react';
 
-const concentrations: Concentration[] = ['Parfum', 'EdP', 'EdT', 'EdC', 'Cologne', 'Other'];
-const families: FragranceFamily[] = ['Oriental', 'Woody', 'Floral', 'Fresh', 'Citrus', 'Aquatic', 'Gourmand', 'Fougère', 'Chypre', 'Aromatic', 'Leather', 'Oud', 'Other'];
-const seasons: Season[] = ['Frühling', 'Sommer', 'Herbst', 'Winter', 'Ganzjährig'];
+const concentrationOptions: { value: Concentration; label: string }[] = [
+  { value: 'Parfum', label: 'Parfum' },
+  { value: 'EdP', label: 'Eau de Parfum' },
+  { value: 'EdT', label: 'Eau de Toilette' },
+  { value: 'EdC', label: 'Eau de Cologne' },
+  { value: 'Cologne', label: 'Cologne' },
+  { value: 'Other', label: 'Andere' },
+];
+
+const familyOptions: { value: FragranceFamily; label: string }[] = [
+  { value: 'Oriental', label: 'Oriental' },
+  { value: 'Woody', label: 'Woody' },
+  { value: 'Floral', label: 'Floral' },
+  { value: 'Fresh', label: 'Fresh' },
+  { value: 'Citrus', label: 'Citrus' },
+  { value: 'Aquatic', label: 'Aquatic' },
+  { value: 'Gourmand', label: 'Gourmand' },
+  { value: 'Fougère', label: 'Fougère' },
+  { value: 'Chypre', label: 'Chypre' },
+  { value: 'Aromatic', label: 'Aromatic' },
+  { value: 'Leather', label: 'Leather' },
+  { value: 'Oud', label: 'Oud' },
+  { value: 'Other', label: 'Andere' },
+];
+
 const tiers: (Tier | '')[] = ['', 'S', 'A', 'B', 'C', 'D'];
 
 const defaultRating: RatingDetails = {
@@ -30,6 +52,10 @@ interface FragranceDetailProps {
 
 export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: FragranceDetailProps) {
   const [tab, setTab] = useState<'info' | 'rating' | 'notes'>('info');
+  const [name, setName] = useState('');
+  const [brand, setBrand] = useState('');
+  const [concentration, setConcentration] = useState<Concentration>('EdP');
+  const [family, setFamily] = useState<FragranceFamily>('Other');
   const [rating, setRating] = useState<RatingDetails>(defaultRating);
   const [tier, setTier] = useState<Tier | ''>('');
   const [fillLevel, setFillLevel] = useState(100);
@@ -51,6 +77,10 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
 
   useEffect(() => {
     if (fragrance) {
+      setName(fragrance.name);
+      setBrand(fragrance.brand);
+      setConcentration(fragrance.concentration);
+      setFamily(fragrance.family);
       setRating(fragrance.rating || defaultRating);
       setTier(fragrance.tier || '');
       setFillLevel(fragrance.fill_level);
@@ -69,6 +99,10 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
   const handleSave = async () => {
     setSaving(true);
     await onSave(fragrance.id, {
+      name: name.trim() || fragrance.name,
+      brand: brand.trim() || fragrance.brand,
+      concentration,
+      family,
       rating: rating.overall > 0 ? rating : null,
       tier: tier || null,
       fill_level: fillLevel,
@@ -98,7 +132,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={fragrance.name} wide>
+    <Modal open={open} onClose={onClose} title={name || fragrance.name} wide>
       {/* Header with image and basic info */}
       <div className="flex gap-4 mb-6">
         <div className="w-20 h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden shrink-0">
@@ -111,8 +145,8 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
           )}
         </div>
         <div className="flex flex-col gap-1">
-          <p className="text-sm text-txt-dim">{fragrance.brand}</p>
-          <p className="text-xs text-txt-muted">{fragrance.concentration} · {fragrance.family}</p>
+          <p className="text-sm text-txt-dim">{brand}</p>
+          <p className="text-xs text-txt-muted">{concentration} · {family}</p>
           {fragrance.launch_year && (
             <p className="text-xs text-txt-muted">Erscheinungsjahr: {fragrance.launch_year}</p>
           )}
@@ -148,6 +182,28 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
       {/* Tab content */}
       {tab === 'info' && (
         <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Input
+            label="Marke"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+          />
+          <Select
+            label="Konzentration"
+            value={concentration}
+            onChange={(e) => setConcentration(e.target.value as Concentration)}
+            options={concentrationOptions}
+          />
+          <Select
+            label="Duftfamilie"
+            value={family}
+            onChange={(e) => setFamily(e.target.value as FragranceFamily)}
+            options={familyOptions}
+          />
           <Input
             label="Kaufpreis (€)"
             type="number"

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Header } from '@/components/Layout/Header';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +11,7 @@ import { StatsPage } from '@/pages/StatsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { FragranceDetail } from '@/components/Collection/FragranceDetail';
+import { useToast, ToastContainer } from '@/components/common';
 import type { Fragrance, FragranceInput } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -27,11 +28,23 @@ export default function App() {
   } = useCollection(user?.id);
 
   const [rankingSelected, setRankingSelected] = useState<Fragrance | null>(null);
+  const { toasts, show: showToast } = useToast();
 
   const existingFragellaIds = useMemo(
     () => new Set(fragrances.filter((f) => f.fragella_id).map((f) => f.fragella_id!)),
     [fragrances]
   );
+
+  const addWithToast = useCallback(async (input: FragranceInput) => {
+    const result = await addFragrance(input);
+    if (result) {
+      showToast(input.is_wishlist
+        ? `${input.name} zur Wunschliste hinzugefügt`
+        : `${input.name} zur Sammlung hinzugefügt`
+      );
+    }
+    return result;
+  }, [addFragrance, showToast]);
 
   const handleMoveToCollection = async (id: string) => {
     return updateFragrance(id, { is_wishlist: false });
@@ -74,10 +87,9 @@ export default function App() {
                 element={
                   <CollectionPage
                     collection={collection}
-                    onAdd={addFragrance}
+                    onAdd={addWithToast}
                     onUpdate={updateFragrance}
                     onDelete={deleteFragrance}
-
                     existingIds={existingFragellaIds}
                   />
                 }
@@ -86,8 +98,7 @@ export default function App() {
                 path="/search"
                 element={
                   <SearchPage
-                    onAdd={addFragrance}
-
+                    onAdd={addWithToast}
                     existingIds={existingFragellaIds}
                   />
                 }
@@ -107,10 +118,9 @@ export default function App() {
                 element={
                   <WishlistPage
                     wishlist={wishlist}
-                    onAdd={addFragrance}
+                    onAdd={addWithToast}
                     onMoveToCollection={handleMoveToCollection}
                     onDelete={deleteFragrance}
-
                     existingIds={existingFragellaIds}
                   />
                 }
@@ -127,6 +137,7 @@ export default function App() {
                     fragrances={fragrances}
                     onUpdateProfile={updateProfile}
                     onImport={handleImport}
+                    onToast={showToast}
                   />
                 }
               />
@@ -142,6 +153,8 @@ export default function App() {
           onSave={updateFragrance}
           onDelete={deleteFragrance}
         />
+
+        <ToastContainer toasts={toasts} />
       </div>
     </BrowserRouter>
   );

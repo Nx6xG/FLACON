@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { FragranceCard } from '@/components/Collection/FragranceCard';
 import { EmptyState } from '@/components/common';
 import type { Fragrance, Tier, FragranceInput } from '@/lib/types';
@@ -12,6 +12,8 @@ const tierConfig: { tier: Tier; label: string; color: string; description: strin
   { tier: 'D', label: 'D-Tier', color: '#c47a7a', description: 'Enttäuschend — Selten getragen' },
 ];
 
+type DropTarget = Tier | 'unranked';
+
 interface RankingPageProps {
   collection: Fragrance[];
   onSelect: (fragrance: Fragrance) => void;
@@ -19,8 +21,12 @@ interface RankingPageProps {
 }
 
 export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps) {
-  const [dragOverTier, setDragOverTier] = useState<Tier | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<DropTarget | null>(null);
   const dragItemId = useRef<string | null>(null);
+  const tierRefs = useRef<Map<DropTarget, HTMLDivElement>>(new Map());
+  const touchGhostRef = useRef<HTMLDivElement | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const isDragging = useRef(false);
 
   const tierGroups = useMemo(() => {
     const groups = new Map<Tier, Fragrance[]>();
@@ -43,37 +49,126 @@ export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps
 
   const unranked = collection.filter((f) => !f.tier);
 
+  // --- Shared drop logic ---
+  const assignTarget = useCallback(async (id: string, target: DropTarget) => {
+    const fragrance = collection.find((f) => f.id === id);
+    if (!fragrance) return;
+
+    if (target === 'unranked') {
+      if (!fragrance.tier) return; // already unranked
+      await onUpdate(id, { tier: null, tier_rank: null });
+    } else {
+      if (fragrance.tier === target) return;
+      const tierItems = tierGroups.get(target) || [];
+      await onUpdate(id, { tier: target, tier_rank: tierItems.length + 1 });
+    }
+  }, [collection, tierGroups, onUpdate]);
+
+  // --- Desktop drag ---
   const handleDragStart = (e: React.DragEvent, id: string) => {
     dragItemId.current = id;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', id);
   };
 
-  const handleDragOver = (e: React.DragEvent, tier: Tier) => {
+  const handleDragOver = (e: React.DragEvent, target: DropTarget) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setDragOverTier(tier);
+    setDragOverTarget(target);
   };
 
   const handleDragLeave = () => {
-    setDragOverTier(null);
+    setDragOverTarget(null);
   };
 
-  const handleDrop = async (e: React.DragEvent, tier: Tier) => {
+  const handleDrop = async (e: React.DragEvent, target: DropTarget) => {
     e.preventDefault();
-    setDragOverTier(null);
+    setDragOverTarget(null);
     const id = dragItemId.current;
     dragItemId.current = null;
     if (!id) return;
-
-    const fragrance = collection.find((f) => f.id === id);
-    if (!fragrance || fragrance.tier === tier) return;
-
-    const tierItems = tierGroups.get(tier) || [];
-    await onUpdate(id, { tier, tier_rank: tierItems.length + 1 });
+    await assignTarget(id, target);
   };
 
-  // Empty state only when nothing is ranked AND nothing to rank
+  // --- Touch drag ---
+  const getTargetAtPoint = useCallback((x: number, y: number): DropTarget | null => {
+    for (const [target, el] of tierRefs.current.entries()) {
+      const rect = el.getBoundingClientRect();
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return target;
+      }
+    }
+    return null;
+  }, []);
+
+  const handleTouchStart = useCallback((id: string, e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+    dragItemId.current = id;
+    isDragging.current = false;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragItemId.current || !touchStartPos.current) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+    const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+
+    if (!isDragging.current && (dx > 8 || dy > 8)) {
+      isDragging.current = true;
+      const ghost = document.createElement('div');
+      ghost.className = 'fixed z-[100] bg-surface border border-gold rounded-sm px-3 py-2 text-sm text-gold shadow-lg pointer-events-none';
+      const frag = collection.find((f) => f.id === dragItemId.current);
+      ghost.textContent = frag ? frag.name : '';
+      document.body.appendChild(ghost);
+      touchGhostRef.current = ghost;
+    }
+
+    if (isDragging.current) {
+      e.preventDefault();
+      if (touchGhostRef.current) {
+        touchGhostRef.current.style.left = `${touch.clientX - 40}px`;
+        touchGhostRef.current.style.top = `${touch.clientY - 20}px`;
+      }
+      const target = getTargetAtPoint(touch.clientX, touch.clientY);
+      setDragOverTarget(target);
+    }
+  }, [collection, getTargetAtPoint]);
+
+  const handleTouchEnd = useCallback(async (e: React.TouchEvent) => {
+    if (touchGhostRef.current) {
+      touchGhostRef.current.remove();
+      touchGhostRef.current = null;
+    }
+
+    if (!isDragging.current || !dragItemId.current) {
+      dragItemId.current = null;
+      touchStartPos.current = null;
+      isDragging.current = false;
+      return;
+    }
+
+    const touch = e.changedTouches[0];
+    const target = getTargetAtPoint(touch.clientX, touch.clientY);
+    setDragOverTarget(null);
+
+    const id = dragItemId.current;
+    dragItemId.current = null;
+    touchStartPos.current = null;
+    isDragging.current = false;
+
+    if (!target || !id) return;
+    await assignTarget(id, target);
+  }, [assignTarget, getTargetAtPoint]);
+
+  useEffect(() => {
+    const preventScroll = (e: TouchEvent) => {
+      if (isDragging.current) e.preventDefault();
+    };
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    return () => document.removeEventListener('touchmove', preventScroll);
+  }, []);
+
   if (collection.length === 0) {
     return (
       <div>
@@ -89,6 +184,21 @@ export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps
     );
   }
 
+  const DraggableCard = ({ fragrance }: { fragrance: Fragrance }) => (
+    <div
+      draggable
+      onDragStart={(e) => handleDragStart(e, fragrance.id)}
+      onTouchStart={(e) => handleTouchStart(fragrance.id, e)}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="cursor-grab active:cursor-grabbing touch-none"
+    >
+      <FragranceCard fragrance={fragrance} onClick={() => !isDragging.current && onSelect(fragrance)} compact />
+    </div>
+  );
+
+  const isOverUnranked = dragOverTarget === 'unranked';
+
   return (
     <div>
       <h1 className="font-display text-3xl font-light text-txt mb-6">
@@ -98,10 +208,11 @@ export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps
       <div className="space-y-6">
         {tierConfig.map(({ tier, label, color, description }) => {
           const items = tierGroups.get(tier) || [];
-          const isOver = dragOverTier === tier;
+          const isOver = dragOverTarget === tier;
           return (
             <div
               key={tier}
+              ref={(el) => { if (el) tierRefs.current.set(tier, el); }}
               className={`bg-surface border rounded overflow-hidden transition-all ${
                 isOver ? 'border-gold ring-1 ring-gold/30' : 'border-border'
               }`}
@@ -133,14 +244,7 @@ export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps
               {items.length > 0 ? (
                 <div className="p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                   {items.map((f) => (
-                    <div
-                      key={f.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, f.id)}
-                      className="cursor-grab active:cursor-grabbing"
-                    >
-                      <FragranceCard fragrance={f} onClick={() => onSelect(f)} compact />
-                    </div>
+                    <DraggableCard key={f.id} fragrance={f} />
                   ))}
                 </div>
               ) : (
@@ -155,26 +259,33 @@ export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps
         })}
       </div>
 
-      {unranked.length > 0 && (
-        <div className="mt-8">
-          <h2 className="font-display text-xl text-txt-dim mb-1">
-            Noch nicht gerankt ({unranked.length})
-          </h2>
-          <p className="text-xs text-txt-muted mb-3">Ziehe Parfums in einen Tier, um sie einzuordnen</p>
+      {/* Unranked section — also a drop target */}
+      <div
+        ref={(el) => { if (el) tierRefs.current.set('unranked', el); }}
+        className={`mt-8 border rounded p-4 transition-all ${
+          isOverUnranked ? 'border-gold ring-1 ring-gold/30 bg-surface' : unranked.length > 0 ? 'border-transparent' : 'border-border border-dashed bg-surface/50'
+        }`}
+        onDragOver={(e) => handleDragOver(e, 'unranked')}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, 'unranked')}
+      >
+        <h2 className="font-display text-xl text-txt-dim mb-1">
+          Noch nicht gerankt ({unranked.length})
+        </h2>
+        <p className="text-xs text-txt-muted mb-3">Ziehe Parfums in einen Tier oder hierher zurück</p>
+
+        {unranked.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
             {unranked.map((f) => (
-              <div
-                key={f.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, f.id)}
-                className="cursor-grab active:cursor-grabbing"
-              >
-                <FragranceCard fragrance={f} onClick={() => onSelect(f)} compact />
-              </div>
+              <DraggableCard key={f.id} fragrance={f} />
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className={`text-center text-sm py-4 transition-colors ${isOverUnranked ? 'text-gold' : 'text-txt-muted'}`}>
+            {isOverUnranked ? 'Hier ablegen um Tier zu entfernen' : 'Alle Parfums sind gerankt'}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

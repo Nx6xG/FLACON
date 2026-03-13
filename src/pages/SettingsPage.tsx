@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Button, Input } from '@/components/common';
+import { Button } from '@/components/common';
 import type { UserProfile, Fragrance } from '@/lib/types';
 import { Download, Upload } from 'lucide-react';
 
@@ -8,11 +7,23 @@ interface SettingsPageProps {
   fragrances: Fragrance[];
   onUpdateProfile: (updates: Partial<UserProfile>) => Promise<void>;
   onImport: (data: Fragrance[]) => Promise<void>;
+  onToast: (message: string) => void;
 }
 
-export function SettingsPage({ profile, fragrances, onUpdateProfile, onImport }: SettingsPageProps) {
-  const [message, setMessage] = useState('');
+function validateImportData(data: unknown): data is Fragrance[] {
+  if (!Array.isArray(data)) return false;
+  return data.every(
+    (item) =>
+      typeof item === 'object' &&
+      item !== null &&
+      typeof item.name === 'string' &&
+      item.name.trim() !== '' &&
+      typeof item.brand === 'string' &&
+      item.brand.trim() !== ''
+  );
+}
 
+export function SettingsPage({ profile, fragrances, onUpdateProfile, onImport, onToast }: SettingsPageProps) {
   const handleExport = () => {
     const data = JSON.stringify(fragrances, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
@@ -22,6 +33,7 @@ export function SettingsPage({ profile, fragrances, onUpdateProfile, onImport }:
     a.download = `flacon-export-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    onToast(`${fragrances.length} Düfte exportiert`);
   };
 
   const handleImport = async () => {
@@ -34,13 +46,14 @@ export function SettingsPage({ profile, fragrances, onUpdateProfile, onImport }:
       const text = await file.text();
       try {
         const data = JSON.parse(text);
-        if (Array.isArray(data)) {
-          await onImport(data);
-          setMessage(`${data.length} Düfte importiert!`);
-          setTimeout(() => setMessage(''), 3000);
+        if (!validateImportData(data)) {
+          onToast('Ungültiges Format — jeder Eintrag braucht mindestens Name und Marke');
+          return;
         }
+        await onImport(data);
+        onToast(`${data.length} Düfte importiert`);
       } catch {
-        setMessage('Ungültige JSON-Datei');
+        onToast('Ungültige JSON-Datei');
       }
     };
     input.click();

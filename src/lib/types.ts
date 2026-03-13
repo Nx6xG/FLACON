@@ -110,7 +110,6 @@ export interface UserProfile {
   email: string;
   display_name: string | null;
   avatar_url: string | null;
-  fragella_api_key: string | null;
   currency: string;
   created_at: string;
 }

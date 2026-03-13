@@ -1,6 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Library, Search, Trophy, Heart, BarChart3, Settings, LogOut, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
 
 interface HeaderProps {
@@ -19,10 +19,16 @@ const navItems = [
 
 export function Header({ user, onSignOut }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+
+  // Close mobile menu on route change (e.g. browser back)
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-bg/85 backdrop-blur-xl border-b border-border">
+      <header className="sticky top-0 z-50 bg-bg/85 backdrop-blur-xl border-b border-border pt-[env(safe-area-inset-top)]">
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
           <NavLink to="/" className="font-display text-2xl font-light tracking-[6px] text-gold uppercase">
             <span className="font-semibold">F</span>lacon
@@ -69,7 +75,7 @@ export function Header({ user, onSignOut }: HeaderProps) {
 
       {/* Mobile nav overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-bg/95 backdrop-blur-xl md:hidden pt-16">
+        <div className="fixed inset-0 z-40 bg-bg/95 backdrop-blur-xl md:hidden" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 4rem)' }}>
           <nav className="flex flex-col p-6 gap-2">
             {navItems.map(({ to, icon: Icon, label }) => (
               <NavLink

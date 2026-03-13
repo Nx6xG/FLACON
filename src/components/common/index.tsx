@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { X, Check } from 'lucide-react';
 
 // === Button ===
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -231,6 +231,44 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
       <h3 className="font-display text-xl text-txt mb-2">{title}</h3>
       <p className="text-sm text-txt-muted max-w-sm mb-6">{description}</p>
       {action}
+    </div>
+  );
+}
+
+// === Toast ===
+interface ToastItem {
+  id: number;
+  message: string;
+}
+
+export function useToast() {
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const nextId = useRef(0);
+
+  const show = useCallback((message: string) => {
+    const id = nextId.current++;
+    setToasts((prev) => [...prev, { id, message }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 2500);
+  }, []);
+
+  return { toasts, show };
+}
+
+export function ToastContainer({ toasts }: { toasts: ToastItem[] }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 items-center">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className="flex items-center gap-2 bg-surface-2 border border-gold-dim/40 rounded-sm px-4 py-2.5 shadow-lg animate-slide-up"
+        >
+          <Check size={14} className="text-accent-fresh shrink-0" />
+          <span className="text-sm text-txt">{t.message}</span>
+        </div>
+      ))}
     </div>
   );
 }
