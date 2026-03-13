@@ -205,8 +205,11 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
       {!loading && results.length === 0 && !query && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Search size={48} className="text-txt-muted mb-4" />
-          <p className="text-sm text-txt-muted max-w-sm mb-6">
+          <p className="text-sm text-txt-muted max-w-sm mb-2">
             Durchsuche die Parfum-Datenbank nach Name oder Marke und füge Düfte zu deiner Sammlung oder Wunschliste hinzu.
+          </p>
+          <p className="text-xs text-txt-muted/60 max-w-sm mb-6">
+            Die erste Suche kann etwas länger dauern, da der Server im Hintergrund erst hochfahren muss.
           </p>
           {history.length > 0 && (
             <div className="w-full max-w-sm">

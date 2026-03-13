@@ -164,9 +164,13 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
               <Share2 size={14} />
             </Button>
           )}
-          <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus size={16} />
-            <span className="hidden sm:inline">Hinzufügen</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAddOpen(true)}
+            title="Manuell hinzufügen"
+          >
+            <Plus size={14} />
           </Button>
         </div>
       </div>
