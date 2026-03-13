@@ -39,6 +39,7 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children, footer, wide }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const hasAutoFocused = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -65,13 +66,14 @@ export function Modal({ open, onClose, title, children, footer, wide }: ModalPro
 
       window.addEventListener('keydown', handleKey);
 
-      // Auto-focus first focusable element
-      requestAnimationFrame(() => {
-        const first = modalRef.current?.querySelector<HTMLElement>(
-          'button, [href], input, select, textarea'
-        );
-        first?.focus();
-      });
+      // Auto-focus first input (not button) — only once on open
+      if (!hasAutoFocused.current) {
+        hasAutoFocused.current = true;
+        requestAnimationFrame(() => {
+          const input = modalRef.current?.querySelector<HTMLElement>('input, select, textarea');
+          input?.focus();
+        });
+      }
 
       return () => {
         document.body.style.overflow = '';
@@ -79,6 +81,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: ModalPro
       };
     } else {
       document.body.style.overflow = '';
+      hasAutoFocused.current = false;
     }
     return () => { document.body.style.overflow = ''; };
   }, [open, onClose]);

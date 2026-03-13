@@ -122,6 +122,16 @@ export interface CollectionStats {
   fillBuckets: { name: string; count: number }[];
   priceRanges: { name: string; count: number }[];
   timeline: { name: string; count: number }[];
+  blindBuyCount: number;
+  occasionDistribution: { name: string; count: number }[];
+  seasonDistribution: { name: string; count: number }[];
+  launchYearDistribution: { name: string; count: number }[];
+  oldestFragrance: Fragrance | null;
+  newestFragrance: Fragrance | null;
+  mostExpensivePerMl: Fragrance | null;
+  bestSillage: Fragrance | null;
+  bestLongevity: Fragrance | null;
+  bestCompliments: Fragrance | null;
 }
 
 // === Auth Types ===

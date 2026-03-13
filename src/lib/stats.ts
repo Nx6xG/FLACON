@@ -140,6 +140,63 @@ export function computeStats(fragrances: Fragrance[]): CollectionStats {
       return { name: label, count };
     });
 
+  // Blind buy count
+  const blindBuyCount = owned.filter((f) => f.is_blind_buy).length;
+
+  // Occasion distribution
+  const occasionMap = new Map<string, number>();
+  owned.forEach((f) => (f.occasions || []).forEach((o) => occasionMap.set(o, (occasionMap.get(o) || 0) + 1)));
+  const occasionDistribution = Array.from(occasionMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Season distribution
+  const seasonMap = new Map<string, number>();
+  owned.forEach((f) => (f.season || []).forEach((s) => seasonMap.set(s, (seasonMap.get(s) || 0) + 1)));
+  const seasonDistribution = Array.from(seasonMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Launch year distribution (decade buckets)
+  const decadeMap = new Map<string, number>();
+  owned.filter((f) => f.launch_year).forEach((f) => {
+    const decade = `${Math.floor(f.launch_year! / 10) * 10}er`;
+    decadeMap.set(decade, (decadeMap.get(decade) || 0) + 1);
+  });
+  const launchYearDistribution = Array.from(decadeMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Oldest & newest fragrance by launch year
+  const withYear = owned.filter((f) => f.launch_year);
+  const oldestFragrance = withYear.length > 0
+    ? withYear.reduce((min, f) => f.launch_year! < min.launch_year! ? f : min)
+    : null;
+  const newestFragrance = withYear.length > 0
+    ? withYear.reduce((max, f) => f.launch_year! > max.launch_year! ? f : max)
+    : null;
+
+  // Most expensive per ml
+  const mostExpensivePerMl = withPriceMl.length > 0
+    ? withPriceMl.reduce((max, f) => {
+        const ppm = f.purchase_price! / f.size_ml!;
+        const maxPpm = max.purchase_price! / max.size_ml!;
+        return ppm > maxPpm ? f : max;
+      })
+    : null;
+
+  // Best sillage, longevity, compliments
+  const ratedWithDetails = owned.filter((f) => f.rating && f.rating.sillage > 0);
+  const bestSillage = ratedWithDetails.length > 0
+    ? ratedWithDetails.reduce((best, f) => (f.rating!.sillage > (best.rating?.sillage || 0) ? f : best))
+    : null;
+  const bestLongevity = ratedWithDetails.length > 0
+    ? ratedWithDetails.reduce((best, f) => (f.rating!.longevity > (best.rating?.longevity || 0) ? f : best))
+    : null;
+  const bestCompliments = ratedWithDetails.length > 0
+    ? ratedWithDetails.reduce((best, f) => (f.rating!.compliments > (best.rating?.compliments || 0) ? f : best))
+    : null;
+
   return {
     totalCount: owned.length,
     totalPurchaseValue,
@@ -163,5 +220,15 @@ export function computeStats(fragrances: Fragrance[]): CollectionStats {
     fillBuckets,
     priceRanges,
     timeline,
+    blindBuyCount,
+    occasionDistribution,
+    seasonDistribution,
+    launchYearDistribution,
+    oldestFragrance,
+    newestFragrance,
+    mostExpensivePerMl,
+    bestSillage,
+    bestLongevity,
+    bestCompliments,
   };
 }

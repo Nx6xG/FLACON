@@ -4,7 +4,7 @@ import { computeStats } from '@/lib/stats';
 import { EmptyState } from '@/components/common';
 import { RadarChart } from '@/components/Rating/RadarChart';
 import type { Fragrance, RatingDetails } from '@/lib/types';
-import { BarChart3, Droplets, Star, Award, TrendingUp, Heart, Trophy, Flame, Sparkles } from 'lucide-react';
+import { BarChart3, Droplets, Star, Award, TrendingUp, Heart, Trophy, Flame, Sparkles, ShoppingBag, Calendar, MapPin, Clock } from 'lucide-react';
 
 const CHART_COLORS = ['#c9a96e', '#6a9a8a', '#a47a9a', '#c49a5a', '#baa44a', '#7a8aaa', '#c47a7a', '#8a6a4a', '#6a8aaa', '#9a9088'];
 
@@ -88,6 +88,8 @@ export function StatsPage({ fragrances }: StatsPageProps) {
         <Pill icon={<Droplets size={12} />} value={`${stats.avgFillLevel.toFixed(0)}%`} label="Ø Füllstand" />
         <Pill icon={<Trophy size={12} />} value={stats.tierDistribution.filter(t => t.name !== 'Kein Tier').reduce((s, t) => s + t.count, 0)} label="Gerankt" />
         <Pill icon={<Star size={12} />} value={stats.unratedCount} label="Unbewertet" />
+        {stats.blindBuyCount > 0 && <Pill icon={<ShoppingBag size={12} />} value={stats.blindBuyCount} label="Blind Buys" />}
+        {stats.totalMl > 0 && <Pill icon={<Droplets size={12} />} value={`${(stats.totalMl / 1000).toFixed(1)} L`} label="Gesamt" />}
         {stats.wishlistCount > 0 && <Pill icon={<Heart size={12} />} value={stats.wishlistCount} label="Wunschliste" />}
       </div>
 
@@ -320,6 +322,15 @@ export function StatsPage({ fragrances }: StatsPageProps) {
                   stat={`${(stats.cheapestPerMl.purchase_price / stats.cheapestPerMl.size_ml).toFixed(2)} €/ml`}
                 />
               )}
+              {stats.mostExpensivePerMl && stats.mostExpensivePerMl.purchase_price && stats.mostExpensivePerMl.size_ml && (
+                <HighlightRow
+                  emoji="💎"
+                  label="Teuerster €/ml"
+                  name={stats.mostExpensivePerMl.name}
+                  brand={stats.mostExpensivePerMl.brand}
+                  stat={`${(stats.mostExpensivePerMl.purchase_price / stats.mostExpensivePerMl.size_ml).toFixed(2)} €/ml`}
+                />
+              )}
               {stats.topRated[0] && (
                 <HighlightRow
                   emoji="⭐"
@@ -338,6 +349,189 @@ export function StatsPage({ fragrances }: StatsPageProps) {
                   stat={`${stats.brandDistribution[0].count} Düfte`}
                 />
               )}
+              {stats.oldestFragrance && stats.oldestFragrance.launch_year && (
+                <HighlightRow
+                  emoji="🏛️"
+                  label="Ältester Duft"
+                  name={stats.oldestFragrance.name}
+                  brand={stats.oldestFragrance.brand}
+                  stat={`${stats.oldestFragrance.launch_year}`}
+                />
+              )}
+              {stats.newestFragrance && stats.newestFragrance.launch_year && (
+                <HighlightRow
+                  emoji="✨"
+                  label="Neuester Duft"
+                  name={stats.newestFragrance.name}
+                  brand={stats.newestFragrance.brand}
+                  stat={`${stats.newestFragrance.launch_year}`}
+                />
+              )}
+            </div>
+          </SectionCard>
+        )}
+      </div>
+
+      {/* === Category Bests === */}
+      {(stats.bestSillage || stats.bestLongevity || stats.bestCompliments) && (
+        <div className="grid md:grid-cols-2 gap-4 mt-4">
+          <SectionCard title="Kategorie-Sieger" icon={<Trophy size={16} />}>
+            <div className="space-y-3">
+              {stats.bestSillage && (
+                <HighlightRow
+                  emoji="💨"
+                  label="Beste Sillage"
+                  name={stats.bestSillage.name}
+                  brand={stats.bestSillage.brand}
+                  stat={`${stats.bestSillage.rating?.sillage}/10`}
+                />
+              )}
+              {stats.bestLongevity && (
+                <HighlightRow
+                  emoji="⏳"
+                  label="Beste Longevity"
+                  name={stats.bestLongevity.name}
+                  brand={stats.bestLongevity.brand}
+                  stat={`${stats.bestLongevity.rating?.longevity}/10`}
+                />
+              )}
+              {stats.bestCompliments && (
+                <HighlightRow
+                  emoji="💬"
+                  label="Meiste Komplimente"
+                  name={stats.bestCompliments.name}
+                  brand={stats.bestCompliments.brand}
+                  stat={`${stats.bestCompliments.rating?.compliments}/10`}
+                />
+              )}
+            </div>
+          </SectionCard>
+
+          {/* Season Distribution */}
+          {stats.seasonDistribution.length > 0 && (
+            <SectionCard title="Saison-Verteilung" icon={<Calendar size={16} />}>
+              <div className="space-y-2">
+                {stats.seasonDistribution.map((item, i) => {
+                  const pct = (item.count / stats.totalCount) * 100;
+                  const seasonColors: Record<string, string> = {
+                    'Frühling': '#6a9a8a',
+                    'Sommer': '#baa44a',
+                    'Herbst': '#c49a5a',
+                    'Winter': '#7a8aaa',
+                    'Ganzjährig': '#c9a96e',
+                  };
+                  return (
+                    <div key={item.name} className="flex items-center gap-3">
+                      <span className="text-xs text-txt-muted w-20 shrink-0">{item.name}</span>
+                      <div className="flex-1 h-4 bg-surface-2 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: seasonColors[item.name] || CHART_COLORS[i] }} />
+                      </div>
+                      <span className="text-xs text-txt font-medium w-6 text-right">{item.count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </SectionCard>
+          )}
+        </div>
+      )}
+
+      {/* === Occasions & Launch Years === */}
+      <div className="grid md:grid-cols-2 gap-4 mt-4">
+        {stats.occasionDistribution.length > 0 && (
+          <SectionCard title="Anlässe" icon={<MapPin size={16} />}>
+            <div className="space-y-2">
+              {stats.occasionDistribution.map((item, i) => {
+                const occasionEmojis: Record<string, string> = {
+                  'Date Night': '💕', 'Office': '💼', 'Party': '🎉',
+                  'Sport': '🏃', 'Formal': '👔', 'Alltag': '☀️',
+                };
+                return (
+                  <div key={item.name} className="flex items-center gap-3">
+                    <span className="text-sm w-5 shrink-0">{occasionEmojis[item.name] || '📌'}</span>
+                    <span className="text-xs text-txt-muted w-20 shrink-0">{item.name}</span>
+                    <div className="flex-1 h-4 bg-surface-2 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${(item.count / stats.occasionDistribution[0].count) * 100}%`,
+                          backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-txt font-medium w-6 text-right">{item.count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </SectionCard>
+        )}
+
+        {stats.launchYearDistribution.length > 0 && (
+          <SectionCard title="Jahrzehnte" icon={<Clock size={16} />}>
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={stats.launchYearDistribution} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+                <XAxis dataKey="name" tick={{ fill: '#9a9088', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(201,169,110,0.08)' }} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} label={{ position: 'center', fill: '#0e0c0b', fontSize: 12, fontWeight: 700 }}>
+                  {stats.launchYearDistribution.map((_, i) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </SectionCard>
+        )}
+
+        {/* Blind Buy Stats */}
+        {stats.blindBuyCount > 0 && (
+          <SectionCard title="Blind Buys" icon={<ShoppingBag size={16} />}>
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <p className="font-display text-3xl font-bold text-purple-400">{stats.blindBuyCount}</p>
+                <p className="text-[10px] text-txt-muted uppercase tracking-wider">Blind Buys</p>
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-txt-muted">Anteil an Sammlung</span>
+                  <span className="text-purple-400 font-semibold">{((stats.blindBuyCount / stats.totalCount) * 100).toFixed(0)}%</span>
+                </div>
+                <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+                  <div className="h-full bg-purple-400/70 rounded-full" style={{ width: `${(stats.blindBuyCount / stats.totalCount) * 100}%` }} />
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Family Distribution Chart */}
+        {stats.familyDistribution.length > 1 && (
+          <SectionCard title="Duftfamilien" icon={<Flame size={16} />}>
+            <div className="space-y-2">
+              {stats.familyDistribution.filter((f) => f.name !== 'Other').slice(0, 6).map((item, i) => {
+                const familyColors: Record<string, string> = {
+                  Oriental: '#c49a5a', Woody: '#8a6a4a', Floral: '#a47a9a',
+                  Fresh: '#6a9a8a', Citrus: '#baa44a', Aquatic: '#6a8aaa',
+                  Gourmand: '#c47a7a', 'Fougère': '#7a9a6a', Chypre: '#9a8a6a',
+                  Aromatic: '#7aaa8a', Leather: '#8a6a5a', Oud: '#7a5a4a',
+                };
+                return (
+                  <div key={item.name} className="flex items-center gap-3">
+                    <span className="text-xs text-txt-muted w-20 truncate shrink-0">{item.name}</span>
+                    <div className="flex-1 h-5 bg-surface-2 rounded-sm overflow-hidden">
+                      <div
+                        className="h-full rounded-sm transition-all duration-500"
+                        style={{
+                          width: `${(item.count / stats.familyDistribution[0].count) * 100}%`,
+                          backgroundColor: familyColors[item.name] || CHART_COLORS[i],
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-txt font-medium w-6 text-right">{item.count}</span>
+                  </div>
+                );
+              })}
             </div>
           </SectionCard>
         )}
