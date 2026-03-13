@@ -1,56 +1,43 @@
 import type { FragellaSearchResult } from './types';
-import { supabase } from './supabase';
 
 /**
- * Direct Supabase search + Fragella CDN images.
- * Images are loaded directly in the browser from cdn.fragella.com (no API key needed).
+ * Search via PerfumAPI → Wikiparfum scraper.
+ * Flow: FLACON → PerfumAPI /search → Wikiparfum (live scrape) → cache in Supabase → return
  */
 
-function generateImageUrl(name: string, brand: string): string {
-  // Fragella CDN pattern: https://cdn.fragella.com/images/name-brand.jpg
-  // Convert "Sauvage Parfum" + "Dior" → "sauvage-parfum-dior"
-  const slug = `${name} ${brand}`
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // remove accents
-    .replace(/[^a-z0-9\s-]/g, '') // remove special chars
-    .replace(/\s+/g, '-') // spaces to hyphens
-    .replace(/-+/g, '-') // collapse multiple hyphens
-    .replace(/^-|-$/g, ''); // trim hyphens
-
-  return `https://cdn.fragella.com/images/${slug}.jpg`;
-}
+const PERFUMAPI_URL = import.meta.env.VITE_PERFUMAPI_URL || '';
 
 export class FragellaAPI {
   constructor(_unused?: string) { }
 
   async search(query: string, limit = 10): Promise<FragellaSearchResult[]> {
-    const q = `%${query}%`;
-    const { data, error } = await supabase
-      .from('perfume_catalog')
-      .select('*')
-      .or(`name.ilike.${q},brand.ilike.${q}`)
-      .order('votes', { ascending: false, nullsFirst: false })
-      .limit(limit);
-
-    if (error) {
-      console.error('Search error:', error);
+    if (!PERFUMAPI_URL) {
+      console.warn('VITE_PERFUMAPI_URL not set');
       return [];
     }
 
-    return this.mapResults(data || []);
+    try {
+      const params = new URLSearchParams({
+        q: query,
+        limit: limit.toString(),
+      });
+
+      const resp = await fetch(`${PERFUMAPI_URL}/search?${params}`);
+      if (!resp.ok) {
+        console.error('PerfumAPI search error:', resp.status);
+        return [];
+      }
+
+      const data = await resp.json();
+      return this.mapResults(data.perfumes || []);
+    } catch (err) {
+      console.error('PerfumAPI search failed:', err);
+      return [];
+    }
   }
 
   async getByBrand(brand: string, limit = 20): Promise<FragellaSearchResult[]> {
-    const { data, error } = await supabase
-      .from('perfume_catalog')
-      .select('*')
-      .ilike('brand', `%${brand}%`)
-      .order('votes', { ascending: false, nullsFirst: false })
-      .limit(limit);
-
-    if (error) return [];
-    return this.mapResults(data || []);
+    return this.search(brand, limit);
   }
 
   async getSimilar(name: string, limit = 5): Promise<FragellaSearchResult[]> {
@@ -60,29 +47,24 @@ export class FragellaAPI {
   private mapResults(items: any[]): FragellaSearchResult[] {
     if (!Array.isArray(items)) return [];
 
-    return items.map((item: any, index: number) => {
-      // Generate Fragella CDN image URL from name + brand
-      const imageUrl = item.image_url || generateImageUrl(item.name || '', item.brand || '');
-
-      return {
-        id: item.id || `catalog-${index}-${Date.now()}`,
-        name: item.name || '',
-        brand: item.brand || '',
-        image: imageUrl,
-        concentration: null,
-        rating: item.rating || null,
-        launch_year: item.release_year || null,
-        accords: [],
-        notes: {
-          top: Array.isArray(item.notes_top) ? item.notes_top : [],
-          middle: Array.isArray(item.notes_middle) ? item.notes_middle : [],
-          base: Array.isArray(item.notes_base) ? item.notes_base : [],
-        },
-        sillage: item.sillage || null,
-        longevity: item.longevity || null,
-        price: null,
-      };
-    });
+    return items.map((item: any, index: number) => ({
+      id: item.id || `wp-${index}-${Date.now()}`,
+      name: item.name || '',
+      brand: item.brand || '',
+      image: item.image_url || null,
+      concentration: item.concentration || null,
+      rating: item.rating || null,
+      launch_year: item.release_year || null,
+      accords: [],
+      notes: {
+        top: Array.isArray(item.notes_top) ? item.notes_top : [],
+        middle: Array.isArray(item.notes_middle) ? item.notes_middle : [],
+        base: Array.isArray(item.notes_base) ? item.notes_base : [],
+      },
+      sillage: item.sillage || null,
+      longevity: item.longevity || null,
+      price: null,
+    }));
   }
 }
 

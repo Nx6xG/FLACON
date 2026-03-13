@@ -1,6 +1,7 @@
 import type { Fragrance } from '@/lib/types';
 import { StarRating, TierBadge, Badge } from '@/components/common';
-import { Droplets } from 'lucide-react';
+import { useImageFetch } from '@/hooks/useImageFetch';
+import { Droplets, Loader2 } from 'lucide-react';
 
 const familyColors: Record<string, string> = {
   Oriental: '#c49a5a',
@@ -26,6 +27,7 @@ interface FragranceCardProps {
 
 export function FragranceCard({ fragrance, onClick, compact }: FragranceCardProps) {
   const { name, brand, concentration, family, image_url, rating, tier, fill_level, purchase_price, size_ml } = fragrance;
+  const { resolvedUrl, loading: imageLoading } = useImageFetch(name, brand, image_url, fragrance.id);
 
   if (compact) {
     return (
@@ -34,8 +36,10 @@ export function FragranceCard({ fragrance, onClick, compact }: FragranceCardProp
         className="flex items-center gap-3 p-3 bg-surface border border-border rounded-sm hover:border-border-light transition-all text-left w-full group"
       >
         <div className="w-10 h-14 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden shrink-0">
-          {image_url ? (
-            <img src={image_url} alt={name} className="w-full h-full object-cover" />
+          {resolvedUrl ? (
+            <img src={resolvedUrl} alt={name} className="w-full h-full object-cover" />
+          ) : imageLoading ? (
+            <Loader2 size={14} className="text-txt-muted animate-spin" />
           ) : (
             <Droplets size={16} className="text-txt-muted" />
           )}
@@ -59,8 +63,10 @@ export function FragranceCard({ fragrance, onClick, compact }: FragranceCardProp
     >
       {/* Image */}
       <div className="aspect-[3/4] bg-surface-2 flex items-center justify-center overflow-hidden relative">
-        {image_url ? (
-          <img src={image_url} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        {resolvedUrl ? (
+          <img src={resolvedUrl} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        ) : imageLoading ? (
+          <Loader2 size={24} className="text-txt-muted animate-spin" />
         ) : (
           <Droplets size={32} className="text-txt-muted" />
         )}

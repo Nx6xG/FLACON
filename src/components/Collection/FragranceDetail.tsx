@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Modal, Button, Input, Textarea, Select, StarRating, TierBadge } from '@/components/common';
 import { RadarChart } from '@/components/Rating/RadarChart';
+import { useImageFetch } from '@/hooks/useImageFetch';
 import type { Fragrance, FragranceInput, Concentration, FragranceFamily, Season, Tier, RatingDetails } from '@/lib/types';
-import { Trash2, ExternalLink, Droplets } from 'lucide-react';
+import { Trash2, ExternalLink, Droplets, Loader2 } from 'lucide-react';
 
 const concentrations: Concentration[] = ['Parfum', 'EdP', 'EdT', 'EdC', 'Cologne', 'Other'];
 const families: FragranceFamily[] = ['Oriental', 'Woody', 'Floral', 'Fresh', 'Citrus', 'Aquatic', 'Gourmand', 'Fougère', 'Chypre', 'Aromatic', 'Leather', 'Oud', 'Other'];
@@ -40,6 +41,13 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const { resolvedUrl: imageUrl, loading: imageLoading } = useImageFetch(
+    fragrance?.name || '',
+    fragrance?.brand || '',
+    fragrance?.image_url,
+    fragrance?.id,
+  );
 
   useEffect(() => {
     if (fragrance) {
@@ -94,8 +102,10 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
       {/* Header with image and basic info */}
       <div className="flex gap-4 mb-6">
         <div className="w-20 h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden shrink-0">
-          {fragrance.image_url ? (
-            <img src={fragrance.image_url} alt={fragrance.name} className="w-full h-full object-cover" />
+          {imageUrl ? (
+            <img src={imageUrl} alt={fragrance.name} className="w-full h-full object-cover" />
+          ) : imageLoading ? (
+            <Loader2 size={18} className="text-txt-muted animate-spin" />
           ) : (
             <Droplets size={24} className="text-txt-muted" />
           )}
@@ -127,9 +137,8 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-3 py-2 text-sm font-medium transition-colors rounded-t-sm ${
-              tab === t ? 'text-gold bg-surface-2' : 'text-txt-muted hover:text-txt'
-            }`}
+            className={`px-3 py-2 text-sm font-medium transition-colors rounded-t-sm ${tab === t ? 'text-gold bg-surface-2' : 'text-txt-muted hover:text-txt'
+              }`}
           >
             {t === 'info' ? 'Details' : t === 'rating' ? 'Bewertung' : 'Notizen'}
           </button>
