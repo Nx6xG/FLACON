@@ -208,8 +208,11 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
           <p className="text-sm text-txt-muted max-w-sm mb-2">
             Durchsuche die Parfum-Datenbank nach Name oder Marke und füge Düfte zu deiner Sammlung oder Wunschliste hinzu.
           </p>
-          <p className="text-xs text-txt-muted/60 max-w-sm mb-6">
+          <p className="text-xs text-txt-muted/60 max-w-sm mb-2">
             Die erste Suche kann etwas länger dauern, da der Server im Hintergrund erst hochfahren muss.
+          </p>
+          <p className="text-xs text-txt-muted/60 max-w-sm mb-6">
+            Parfum nicht gefunden? Schau auf <a href="https://www.wikiparfum.com" target="_blank" rel="noopener noreferrer" className="text-gold/60 hover:text-gold underline underline-offset-2 transition-colors">wikiparfum.com</a> nach dem genauen Namen und probiere es damit.
           </p>
           {history.length > 0 && (
             <div className="w-full max-w-sm">
