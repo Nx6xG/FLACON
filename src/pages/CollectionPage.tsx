@@ -8,7 +8,7 @@ import type { Fragrance, FragranceInput } from '@/lib/types';
 import { RandomPicker } from '@/components/Collection/RandomPicker';
 import { FragranceQuiz } from '@/components/Collection/FragranceQuiz';
 import { WeatherRecommendation } from '@/components/Collection/WeatherRecommendation';
-import { Plus, Library, LayoutGrid, List, Filter, Share2, Dices, HelpCircle, Star, Layers } from 'lucide-react';
+import { Plus, Library, LayoutGrid, List, Filter, Share2, Dices, HelpCircle, Star, Layers, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CollectionPageProps {
   collection: Fragrance[];
@@ -51,6 +51,7 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
   const [pickerOpen, setPickerOpen] = useState(false);
   const [quizOpen, setQuizOpen] = useState(false);
   const [filterOccasion, setFilterOccasion] = useState('');
+  const [progressExpand, setProgressExpand] = useState<'unrated' | 'untier' | null>(null);
 
   const brands = useMemo(
     () => [...new Set(collection.map((f) => f.brand))].sort(),
@@ -259,35 +260,65 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
 
       {/* Progress banner */}
       {!loading && collection.length > 0 && (() => {
-        const unrated = collection.filter((f) => !f.rating?.overall).length;
-        const untier = collection.filter((f) => !f.tier).length;
-        if (unrated === 0 && untier === 0) return null;
+        const unratedList = collection.filter((f) => !f.rating?.overall);
+        const untierList = collection.filter((f) => !f.tier);
+        if (unratedList.length === 0 && untierList.length === 0) return null;
+        const expandedList = progressExpand === 'unrated' ? unratedList : progressExpand === 'untier' ? untierList : [];
         return (
-          <div className="flex items-center gap-3 mb-4 p-3 bg-surface border border-border rounded-lg">
-            <div className="flex items-center gap-4 flex-1 flex-wrap">
-              {unrated > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Star size={12} className="text-txt-muted" />
-                  <span className="text-xs text-txt-muted">
-                    <span className="text-gold font-semibold">{unrated}</span> unbewertet
-                  </span>
-                </div>
-              )}
-              {untier > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <Layers size={12} className="text-txt-muted" />
-                  <span className="text-xs text-txt-muted">
-                    <span className="text-gold font-semibold">{untier}</span> ohne Tier
-                  </span>
-                </div>
-              )}
+          <div className="mb-4 bg-surface border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center gap-3 p-3">
+              <div className="flex items-center gap-3 flex-1 flex-wrap">
+                {unratedList.length > 0 && (
+                  <button
+                    onClick={() => setProgressExpand(progressExpand === 'unrated' ? null : 'unrated')}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
+                      progressExpand === 'unrated' ? 'bg-gold/10' : 'hover:bg-surface-2'
+                    }`}
+                  >
+                    <Star size={12} className="text-txt-muted" />
+                    <span className="text-xs text-txt-muted">
+                      <span className="text-gold font-semibold">{unratedList.length}</span> unbewertet
+                    </span>
+                    {progressExpand === 'unrated' ? <ChevronUp size={10} className="text-txt-muted" /> : <ChevronDown size={10} className="text-txt-muted" />}
+                  </button>
+                )}
+                {untierList.length > 0 && (
+                  <button
+                    onClick={() => setProgressExpand(progressExpand === 'untier' ? null : 'untier')}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
+                      progressExpand === 'untier' ? 'bg-gold/10' : 'hover:bg-surface-2'
+                    }`}
+                  >
+                    <Layers size={12} className="text-txt-muted" />
+                    <span className="text-xs text-txt-muted">
+                      <span className="text-gold font-semibold">{untierList.length}</span> ohne Tier
+                    </span>
+                    {progressExpand === 'untier' ? <ChevronUp size={10} className="text-txt-muted" /> : <ChevronDown size={10} className="text-txt-muted" />}
+                  </button>
+                )}
+              </div>
+              <div className="h-1.5 w-24 bg-surface-2 rounded-full overflow-hidden shrink-0">
+                <div
+                  className="h-full bg-gold/60 rounded-full transition-all"
+                  style={{ width: `${((collection.length - unratedList.length) / collection.length) * 100}%` }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 flex-1 max-w-[120px] bg-surface-2 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gold/60 rounded-full transition-all"
-                style={{ width: `${((collection.length - unrated) / collection.length) * 100}%` }}
-              />
-            </div>
+            {progressExpand && expandedList.length > 0 && (
+              <div className="border-t border-border px-3 pb-3 pt-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {expandedList.map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setSelected(f)}
+                      className="text-[11px] px-2.5 py-1 bg-surface-2 border border-border rounded-full text-txt-muted hover:border-gold/30 hover:text-gold transition-colors truncate max-w-[200px]"
+                    >
+                      {f.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}
