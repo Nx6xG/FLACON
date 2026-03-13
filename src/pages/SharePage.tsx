@@ -1,14 +1,23 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePublicCollection } from '@/hooks/usePublicCollection';
 import { useImageFetch } from '@/hooks/useImageFetch';
 import { computeStats } from '@/lib/stats';
+import { supabase } from '@/lib/supabase';
 import { Modal, TierBadge, Badge, Select, Input, StarRating } from '@/components/common';
 import { RadarChart } from '@/components/Rating/RadarChart';
-import type { Fragrance } from '@/lib/types';
-import { Loader2, Droplets, Star, Trophy, TrendingUp, Filter, X } from 'lucide-react';
+import type { Fragrance, Tier } from '@/lib/types';
+import { Loader2, Droplets, Star, Trophy, TrendingUp, Filter, LayoutGrid, Check } from 'lucide-react';
 
-function PublicCard({ fragrance: f, onClick }: { fragrance: Fragrance; onClick: () => void }) {
+const tierConfig: { tier: Tier; label: string; color: string; description: string }[] = [
+  { tier: 'S', label: 'S-Tier', color: '#c9a96e', description: 'Meisterwerke — Holy Grails' },
+  { tier: 'A', label: 'A-Tier', color: '#6a9a8a', description: 'Exzellent — Regelmäßig getragen' },
+  { tier: 'B', label: 'B-Tier', color: '#7a8aaa', description: 'Solide — Gute Allrounder' },
+  { tier: 'C', label: 'C-Tier', color: '#9a9088', description: 'Durchschnitt — Situativ okay' },
+  { tier: 'D', label: 'D-Tier', color: '#c47a7a', description: 'Enttäuschend — Selten getragen' },
+];
+
+function PublicCard({ fragrance: f, onClick, owned }: { fragrance: Fragrance; onClick: () => void; owned?: boolean }) {
   const { resolvedUrl, loading: imgLoading } = useImageFetch(f.name, f.brand, f.image_url, f.id);
 
   return (
@@ -27,6 +36,11 @@ function PublicCard({ fragrance: f, onClick }: { fragrance: Fragrance; onClick: 
         {f.tier && (
           <div className="absolute top-2 right-2">
             <TierBadge tier={f.tier} />
+          </div>
+        )}
+        {owned && (
+          <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-accent-fresh/90 flex items-center justify-center" title="Hast du auch">
+            <Check size={14} className="text-white" />
           </div>
         )}
         {f.fill_level < 100 && (
@@ -155,15 +169,137 @@ function RatingBar({ label, value }: { label: string; value: number }) {
   );
 }
 
+function TierListCard({ fragrance: f, onClick, owned }: { fragrance: Fragrance; onClick: () => void; owned?: boolean }) {
+  const { resolvedUrl } = useImageFetch(f.name, f.brand, f.image_url, f.id);
+
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-3 bg-surface-2 border border-border rounded-sm p-2 text-left group hover:border-border-light transition-all w-full"
+    >
+      <div className="w-10 h-14 rounded-sm bg-surface flex items-center justify-center overflow-hidden shrink-0 relative">
+        {resolvedUrl ? (
+          <img src={resolvedUrl} alt={f.name} loading="lazy" className="w-full h-full object-cover" />
+        ) : (
+          <Droplets size={14} className="text-txt-muted" />
+        )}
+        {owned && (
+          <div className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-accent-fresh/90 flex items-center justify-center">
+            <Check size={10} className="text-white" />
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-medium text-txt truncate group-hover:text-gold transition-colors">{f.name}</h3>
+        <p className="text-xs text-txt-muted truncate">{f.brand}</p>
+      </div>
+      {f.rating?.overall ? (
+        <div className="flex items-center gap-1 shrink-0">
+          <Star size={10} className="text-gold fill-gold" />
+          <span className="text-xs text-txt-dim">{f.rating.overall}</span>
+        </div>
+      ) : null}
+    </button>
+  );
+}
+
+function PublicTierList({ fragrances, onSelect, ownedKeys }: { fragrances: Fragrance[]; onSelect: (f: Fragrance) => void; ownedKeys: Set<string> }) {
+  const tierGroups = useMemo(() => {
+    const groups = new Map<Tier, Fragrance[]>();
+    tierConfig.forEach(({ tier }) => groups.set(tier, []));
+
+    fragrances
+      .filter((f) => f.tier)
+      .forEach((f) => {
+        const list = groups.get(f.tier!) || [];
+        list.push(f);
+        groups.set(f.tier!, list);
+      });
+
+    groups.forEach((list) => {
+      list.sort((a, b) => (a.tier_rank || 999) - (b.tier_rank || 999));
+    });
+
+    return groups;
+  }, [fragrances]);
+
+  const hasAnyRanked = fragrances.some((f) => f.tier);
+
+  if (!hasAnyRanked) {
+    return (
+      <div className="text-center py-16">
+        <Trophy size={48} className="text-txt-muted mx-auto mb-4" />
+        <p className="text-txt-muted">Noch keine Tier-Rankings vorhanden.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {tierConfig.map(({ tier, label, color, description }) => {
+        const items = tierGroups.get(tier) || [];
+        if (items.length === 0) return null;
+
+        return (
+          <div key={tier} className="bg-surface border border-border rounded overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: `${color}33` }}>
+              <span
+                className="w-10 h-10 rounded-sm flex items-center justify-center text-lg font-bold font-body"
+                style={{
+                  backgroundColor: `${color}22`,
+                  color,
+                  border: `1px solid ${color}44`,
+                }}
+              >
+                {tier}
+              </span>
+              <div>
+                <p className="text-sm font-medium" style={{ color }}>{label}</p>
+                <p className="text-xs text-txt-muted">{description}</p>
+              </div>
+              <span className="ml-auto text-sm text-txt-muted tabular-nums">{items.length}</span>
+            </div>
+            <div className="p-2 sm:p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 sm:gap-2">
+              {items.map((f) => (
+                <TierListCard key={f.id} fragrance={f} onClick={() => onSelect(f)} owned={ownedKeys.has(`${f.name.toLowerCase()}::${f.brand.toLowerCase()}`)} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function SharePage() {
   const { code } = useParams<{ code: string }>();
   const { fragrances, profile, loading, error } = usePublicCollection(code);
   const stats = useMemo(() => computeStats(fragrances), [fragrances]);
 
   const [selected, setSelected] = useState<Fragrance | null>(null);
+  const [tab, setTab] = useState<'collection' | 'tierlist'>('collection');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'rating' | 'price'>('recent');
   const [showFilters, setShowFilters] = useState(false);
+
+  const hasRanked = fragrances.some((f) => f.tier);
+
+  // Load viewer's own collection keys to highlight shared fragrances
+  const [ownedKeys, setOwnedKeys] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('fragrances')
+        .select('name, brand')
+        .eq('user_id', user.id)
+        .eq('is_wishlist', false);
+      if (data) {
+        setOwnedKeys(new Set(data.map((f: { name: string; brand: string }) => `${f.name.toLowerCase()}::${f.brand.toLowerCase()}`)));
+      }
+    })();
+  }, []);
 
   const filtered = useMemo(() => {
     let items = [...fragrances];
@@ -245,52 +381,95 @@ export function SharePage() {
           </div>
         )}
 
-        {/* Search & Sort */}
-        {fragrances.length > 3 && (
-          <div className="flex flex-col gap-2 mb-6">
-            <div className="flex gap-2">
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Suchen..."
-                className="flex-1"
-              />
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`px-3 py-2 border rounded-sm text-sm transition-colors ${showFilters ? 'border-gold-dim text-gold bg-surface' : 'border-border text-txt-muted bg-surface hover:text-txt'}`}
-              >
-                <Filter size={14} />
-              </button>
+        {/* Shared count */}
+        {ownedKeys.size > 0 && (() => {
+          const sharedCount = fragrances.filter((f) => ownedKeys.has(`${f.name.toLowerCase()}::${f.brand.toLowerCase()}`)).length;
+          return sharedCount > 0 ? (
+            <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-accent-fresh/10 border border-accent-fresh/20 rounded-sm w-fit">
+              <Check size={14} className="text-accent-fresh" />
+              <span className="text-sm text-accent-fresh">
+                {sharedCount} {sharedCount === 1 ? 'Duft' : 'Düfte'} hast du auch
+              </span>
             </div>
-            {showFilters && (
-              <Select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                options={[
-                  { value: 'recent', label: 'Neueste zuerst' },
-                  { value: 'name', label: 'Name A–Z' },
-                  { value: 'rating', label: 'Beste Bewertung' },
-                  { value: 'price', label: 'Höchster Preis' },
-                ]}
-              />
-            )}
+          ) : null;
+        })()}
+
+        {/* Tabs */}
+        {hasRanked && fragrances.length > 0 && (
+          <div className="flex gap-1 mb-6 bg-surface border border-border rounded-sm p-1 w-fit">
+            <button
+              onClick={() => setTab('collection')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                tab === 'collection' ? 'bg-surface-2 text-gold' : 'text-txt-muted hover:text-txt'
+              }`}
+            >
+              <LayoutGrid size={14} />
+              Sammlung
+            </button>
+            <button
+              onClick={() => setTab('tierlist')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm transition-colors ${
+                tab === 'tierlist' ? 'bg-surface-2 text-gold' : 'text-txt-muted hover:text-txt'
+              }`}
+            >
+              <Trophy size={14} />
+              Tier Liste
+            </button>
           </div>
         )}
 
-        {/* Grid */}
-        {filtered.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {filtered.map((f) => (
-              <PublicCard key={f.id} fragrance={f} onClick={() => setSelected(f)} />
-            ))}
-          </div>
-        ) : search ? (
-          <p className="text-center text-txt-muted py-12">Keine Ergebnisse für "{search}".</p>
+        {tab === 'tierlist' && hasRanked ? (
+          <PublicTierList fragrances={fragrances} onSelect={setSelected} ownedKeys={ownedKeys} />
         ) : (
-          <div className="text-center py-16">
-            <Droplets size={48} className="text-txt-muted mx-auto mb-4" />
-            <p className="text-txt-muted">Diese Sammlung ist noch leer.</p>
-          </div>
+          <>
+            {/* Search & Sort */}
+            {fragrances.length > 3 && (
+              <div className="flex flex-col gap-2 mb-6">
+                <div className="flex gap-2">
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Suchen..."
+                    className="flex-1"
+                  />
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`px-3 py-2 border rounded-sm text-sm transition-colors ${showFilters ? 'border-gold-dim text-gold bg-surface' : 'border-border text-txt-muted bg-surface hover:text-txt'}`}
+                  >
+                    <Filter size={14} />
+                  </button>
+                </div>
+                {showFilters && (
+                  <Select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    options={[
+                      { value: 'recent', label: 'Neueste zuerst' },
+                      { value: 'name', label: 'Name A–Z' },
+                      { value: 'rating', label: 'Beste Bewertung' },
+                      { value: 'price', label: 'Höchster Preis' },
+                    ]}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Grid */}
+            {filtered.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {filtered.map((f) => (
+                  <PublicCard key={f.id} fragrance={f} onClick={() => setSelected(f)} owned={ownedKeys.has(`${f.name.toLowerCase()}::${f.brand.toLowerCase()}`)} />
+                ))}
+              </div>
+            ) : search ? (
+              <p className="text-center text-txt-muted py-12">Keine Ergebnisse für "{search}".</p>
+            ) : (
+              <div className="text-center py-16">
+                <Droplets size={48} className="text-txt-muted mx-auto mb-4" />
+                <p className="text-txt-muted">Diese Sammlung ist noch leer.</p>
+              </div>
+            )}
+          </>
         )}
 
         {/* Footer */}
