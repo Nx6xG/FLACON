@@ -3,7 +3,7 @@ import { Modal, Button, Input, Textarea, Select, StarRating, TierBadge } from '@
 import { RadarChart } from '@/components/Rating/RadarChart';
 import { useImageFetch } from '@/hooks/useImageFetch';
 import type { Fragrance, FragranceInput, FragranceNote, Concentration, FragranceFamily, Season, Occasion, Tier, RatingDetails } from '@/lib/types';
-import { Trash2, Droplets, Loader2, Pencil, SprayCan } from 'lucide-react';
+import { Trash2, Droplets, Loader2, Pencil, SprayCan, ShoppingBag } from 'lucide-react';
 
 const concentrationOptions: { value: Concentration; label: string }[] = [
   { value: 'Parfum', label: 'Parfum' },
@@ -172,6 +172,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
   const [purchaseDate, setPurchaseDate] = useState('');
   const [season, setSeason] = useState<Season[]>(['Ganzjährig']);
   const [occasions, setOccasions] = useState<string[]>([]);
+  const [isBlindBuy, setIsBlindBuy] = useState(false);
   const [notesText, setNotesText] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -200,6 +201,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
       setPurchaseDate(fragrance.purchase_date || '');
       setSeason(fragrance.season?.length ? fragrance.season : ['Ganzjährig']);
       setOccasions(fragrance.occasions || []);
+      setIsBlindBuy(fragrance.is_blind_buy || false);
       setNotesText(fragrance.notes_text || '');
       setTab('info');
       setEditing(false);
@@ -218,6 +220,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
       family,
       season,
       occasions,
+      is_blind_buy: isBlindBuy,
       rating: rating.overall > 0 ? rating : null,
       tier: tier || null,
       fill_level: fillLevel,
@@ -485,6 +488,21 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
                   );
                 })}
               </div>
+            </div>
+            <div className="col-span-2">
+              <button
+                type="button"
+                onClick={() => setIsBlindBuy(!isBlindBuy)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors w-full ${
+                  isBlindBuy
+                    ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
+                    : 'bg-surface-2 border-border text-txt-muted hover:border-border-light'
+                }`}
+              >
+                <ShoppingBag size={14} />
+                <span className="text-xs font-medium">Blind Buy</span>
+                {isBlindBuy && <span className="text-[10px] ml-auto">Ohne vorher gerochen</span>}
+              </button>
             </div>
           </div>
         </div>

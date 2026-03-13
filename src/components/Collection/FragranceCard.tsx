@@ -78,6 +78,13 @@ export function FragranceCard({ fragrance, onClick, compact }: FragranceCardProp
           </div>
         )}
 
+        {/* Blind buy badge */}
+        {fragrance.is_blind_buy && (
+          <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-purple-500/80 rounded text-[9px] font-semibold text-white uppercase tracking-wider">
+            Blind
+          </div>
+        )}
+
         {/* Fill level bar */}
         {fill_level < 100 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-3">

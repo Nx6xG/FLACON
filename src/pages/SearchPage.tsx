@@ -72,6 +72,7 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
       tier: null,
       tier_rank: null,
       occasions: [],
+      is_blind_buy: false,
       notes_text: '',
       is_wishlist: isWishlist,
       fragella_id: result.id,

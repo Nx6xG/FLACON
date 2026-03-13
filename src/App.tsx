@@ -13,6 +13,7 @@ import { TimelinePage } from '@/pages/TimelinePage';
 import { StatsPage } from '@/pages/StatsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { SharePage } from '@/pages/SharePage';
+import { CompareCollectionsPage } from '@/pages/CompareCollectionsPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { FragranceDetail } from '@/components/Collection/FragranceDetail';
 import { useToast, ToastContainer } from '@/components/common';
@@ -84,12 +85,13 @@ export default function App() {
     }
   };
 
-  // Public share route — accessible without auth
-  if (window.location.pathname.startsWith('/share/')) {
+  // Public routes — accessible without auth
+  if (window.location.pathname.startsWith('/share/') || window.location.pathname === '/compare-collections') {
     return (
       <BrowserRouter>
         <Routes>
           <Route path="/share/:code" element={<SharePage />} />
+          <Route path="/compare-collections" element={<CompareCollectionsPage />} />
         </Routes>
       </BrowserRouter>
     );

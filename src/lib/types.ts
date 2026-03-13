@@ -58,6 +58,7 @@ export interface Fragrance {
   tier: Tier | null;
   tier_rank: number | null; // position within tier
   occasions: string[]; // occasion tags
+  is_blind_buy: boolean;
   notes_text: string; // personal notes
   is_wishlist: boolean;
   fragella_id: string | null; // external API reference
