@@ -90,7 +90,7 @@ export function StatsPage({ fragrances }: StatsPageProps) {
               <BarChart data={stats.brandDistribution.slice(0, 8)} layout="vertical" margin={{ left: 0, right: 16 }}>
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" width={100} tick={{ fill: '#9a9088', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(201,169,110,0.08)' }} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                   {stats.brandDistribution.slice(0, 8).map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
@@ -147,7 +147,7 @@ export function StatsPage({ fragrances }: StatsPageProps) {
               <BarChart data={stats.concentrationDistribution} margin={{ left: 0, right: 16 }}>
                 <XAxis dataKey="name" tick={{ fill: '#9a9088', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(201,169,110,0.08)' }} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {stats.concentrationDistribution.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { getFragellaAPI } from '@/lib/fragella';
 import type { FragellaSearchResult } from '@/lib/types';
 
-export function useFragellaSearch(_apiKey?: string | null) {
+export function useFragellaSearch() {
   const [results, setResults] = useState<FragellaSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

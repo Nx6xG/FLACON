@@ -11,10 +11,10 @@ interface CollectionPageProps {
   onAdd: (input: FragranceInput) => Promise<any>;
   onUpdate: (id: string, updates: Partial<FragranceInput>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
-  apiKey?: string | null;
+  existingIds?: Set<string>;
 }
 
-export function CollectionPage({ collection, onAdd, onUpdate, onDelete, apiKey }: CollectionPageProps) {
+export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existingIds }: CollectionPageProps) {
   const [selected, setSelected] = useState<Fragrance | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -185,7 +185,7 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, apiKey }
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onAdd={onAdd}
-        apiKey={apiKey}
+        existingIds={existingIds}
       />
     </div>
   );

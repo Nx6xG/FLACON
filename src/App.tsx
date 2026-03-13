@@ -28,8 +28,6 @@ export default function App() {
 
   const [rankingSelected, setRankingSelected] = useState<Fragrance | null>(null);
 
-  const apiKey = profile?.fragella_api_key || import.meta.env.VITE_FRAGELLA_API_KEY || null;
-
   const existingFragellaIds = useMemo(
     () => new Set(fragrances.filter((f) => f.fragella_id).map((f) => f.fragella_id!)),
     [fragrances]
@@ -79,7 +77,8 @@ export default function App() {
                     onAdd={addFragrance}
                     onUpdate={updateFragrance}
                     onDelete={deleteFragrance}
-                    apiKey={apiKey}
+
+                    existingIds={existingFragellaIds}
                   />
                 }
               />
@@ -88,7 +87,7 @@ export default function App() {
                 element={
                   <SearchPage
                     onAdd={addFragrance}
-                    apiKey={apiKey}
+
                     existingIds={existingFragellaIds}
                   />
                 }
@@ -99,6 +98,7 @@ export default function App() {
                   <RankingPage
                     collection={collection}
                     onSelect={setRankingSelected}
+                    onUpdate={updateFragrance}
                   />
                 }
               />
@@ -110,7 +110,8 @@ export default function App() {
                     onAdd={addFragrance}
                     onMoveToCollection={handleMoveToCollection}
                     onDelete={deleteFragrance}
-                    apiKey={apiKey}
+
+                    existingIds={existingFragellaIds}
                   />
                 }
               />

@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { useFragellaSearch } from '@/hooks/useFragellaSearch';
-import { Button, Input, EmptyState } from '@/components/common';
+import { Button, Input } from '@/components/common';
 import type { FragranceInput, FragellaSearchResult } from '@/lib/types';
-import { Search, Plus, Loader2, Droplets, AlertCircle } from 'lucide-react';
+import { Search, Plus, Loader2, Droplets, Check } from 'lucide-react';
 
 interface SearchPageProps {
   onAdd: (input: FragranceInput) => Promise<any>;
-  apiKey?: string | null;
   existingIds: Set<string>;
 }
 
-export function SearchPage({ onAdd, apiKey, existingIds }: SearchPageProps) {
+export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
   const [query, setQuery] = useState('');
-  const { results, loading, error, search } = useFragellaSearch(apiKey);
+  const { results, loading, error, search } = useFragellaSearch();
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null);
 
@@ -56,21 +55,6 @@ export function SearchPage({ onAdd, apiKey, existingIds }: SearchPageProps) {
     setAddedIds((prev) => new Set(prev).add(result.id));
     setAdding(null);
   };
-
-  if (!apiKey) {
-    return (
-      <div>
-        <h1 className="font-display text-3xl font-light text-txt mb-6">
-          Parfums <em className="text-gold italic">entdecken</em>
-        </h1>
-        <EmptyState
-          icon={<AlertCircle size={48} />}
-          title="API-Key benötigt"
-          description="Um die Parfum-Datenbank zu durchsuchen, trage deinen Fragella API-Key in den Settings ein. Du kannst dir kostenlos einen auf api.fragella.com holen."
-        />
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -136,30 +120,31 @@ export function SearchPage({ onAdd, apiKey, existingIds }: SearchPageProps) {
                   </div>
                 )}
 
-                <div className="flex gap-2 mt-3">
-                  {alreadyOwned || justAdded ? (
-                    <span className="text-xs text-accent-fresh">✓ In Sammlung</span>
-                  ) : (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleAdd(r, false)}
-                        disabled={isAdding}
-                        className="flex-1"
-                      >
-                        <Plus size={14} />
-                        Sammlung
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleAdd(r, true)}
-                        disabled={isAdding}
-                      >
-                        Wunschliste
-                      </Button>
-                    </>
-                  )}
+                {(alreadyOwned || justAdded) && (
+                  <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 bg-accent-fresh/10 border border-accent-fresh/20 rounded-sm">
+                    <Check size={12} className="text-accent-fresh shrink-0" />
+                    <span className="text-[11px] text-accent-fresh">Bereits in deiner Sammlung</span>
+                  </div>
+                )}
+
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    size="sm"
+                    onClick={() => handleAdd(r, false)}
+                    disabled={isAdding}
+                    className="flex-1"
+                  >
+                    <Plus size={14} />
+                    {alreadyOwned || justAdded ? 'Nochmal hinzufügen' : 'Sammlung'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAdd(r, true)}
+                    disabled={isAdding}
+                  >
+                    Wunschliste
+                  </Button>
                 </div>
               </div>
             </div>

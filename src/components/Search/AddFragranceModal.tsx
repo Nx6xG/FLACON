@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal, Button, Input, Select } from '@/components/common';
 import { useFragellaSearch } from '@/hooks/useFragellaSearch';
 import type { FragranceInput, FragellaSearchResult, Concentration, FragranceFamily } from '@/lib/types';
-import { Search, Plus, Loader2, Droplets } from 'lucide-react';
+import { Search, Plus, Loader2, Droplets, Check } from 'lucide-react';
 
 const concentrations: { value: Concentration; label: string }[] = [
   { value: 'Parfum', label: 'Parfum' },
@@ -33,15 +33,16 @@ interface AddFragranceModalProps {
   open: boolean;
   onClose: () => void;
   onAdd: (input: FragranceInput) => Promise<any>;
-  apiKey?: string | null;
   isWishlist?: boolean;
+  existingIds?: Set<string>;
 }
 
-export function AddFragranceModal({ open, onClose, onAdd, apiKey, isWishlist }: AddFragranceModalProps) {
-  const [mode, setMode] = useState<'search' | 'manual'>(apiKey ? 'search' : 'manual');
+export function AddFragranceModal({ open, onClose, onAdd, isWishlist, existingIds }: AddFragranceModalProps) {
+  const [mode, setMode] = useState<'search' | 'manual'>('search');
   const [query, setQuery] = useState('');
-  const { results, loading: searching, error: searchError, search, clear } = useFragellaSearch(apiKey);
+  const { results, loading: searching, error: searchError, search, clear } = useFragellaSearch();
   const [adding, setAdding] = useState(false);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
   // Manual form state
   const [name, setName] = useState('');
@@ -113,8 +114,8 @@ export function AddFragranceModal({ open, onClose, onAdd, apiKey, isWishlist }: 
     };
 
     await onAdd(input);
+    setAddedIds((prev) => new Set(prev).add(result.id));
     setAdding(false);
-    resetAndClose();
   };
 
   const handleAddManual = async (e: React.FormEvent) => {
@@ -146,13 +147,13 @@ export function AddFragranceModal({ open, onClose, onAdd, apiKey, isWishlist }: 
 
     await onAdd(input);
     setAdding(false);
-    resetAndClose();
   };
 
   const resetAndClose = () => {
     setQuery('');
     setName('');
     setBrand('');
+    setAddedIds(new Set());
     clear();
     onClose();
   };
@@ -165,7 +166,6 @@ export function AddFragranceModal({ open, onClose, onAdd, apiKey, isWishlist }: 
       wide
     >
       {/* Mode toggle */}
-      {apiKey && (
         <div className="flex gap-1 mb-4">
           <button
             onClick={() => setMode('search')}
@@ -186,7 +186,6 @@ export function AddFragranceModal({ open, onClose, onAdd, apiKey, isWishlist }: 
             Manuell
           </button>
         </div>
-      )}
 
       {mode === 'search' ? (
         <div>
@@ -207,32 +206,41 @@ export function AddFragranceModal({ open, onClose, onAdd, apiKey, isWishlist }: 
           )}
 
           <div className="space-y-2 max-h-80 overflow-y-auto">
-            {results.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => handleAddFromSearch(r)}
-                disabled={adding}
-                className="flex items-center gap-3 w-full p-3 bg-surface-2 border border-border rounded-sm hover:border-gold-dim transition-all text-left"
-              >
-                <div className="w-10 h-14 rounded-sm bg-surface-3 overflow-hidden shrink-0 flex items-center justify-center">
-                  {r.image ? (
-                    <img src={r.image} alt={r.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <Droplets size={14} className="text-txt-muted" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-txt truncate">{r.name}</p>
-                  <p className="text-xs text-txt-muted">{r.brand}</p>
-                  <div className="flex gap-2 mt-1 text-[11px] text-txt-muted">
-                    {r.concentration && <span>{r.concentration}</span>}
-                    {r.launch_year && <span>· {r.launch_year}</span>}
-                    {r.rating && <span>· ★ {r.rating.toFixed(1)}</span>}
+            {results.map((r) => {
+              const alreadyOwned = existingIds?.has(r.id) || addedIds.has(r.id);
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => handleAddFromSearch(r)}
+                  disabled={adding}
+                  className="flex items-center gap-3 w-full p-3 bg-surface-2 border border-border rounded-sm hover:border-gold-dim transition-all text-left"
+                >
+                  <div className="w-10 h-14 rounded-sm bg-surface-3 overflow-hidden shrink-0 flex items-center justify-center">
+                    {r.image ? (
+                      <img src={r.image} alt={r.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Droplets size={14} className="text-txt-muted" />
+                    )}
                   </div>
-                </div>
-                <Plus size={18} className="text-gold shrink-0" />
-              </button>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-txt truncate">{r.name}</p>
+                    <p className="text-xs text-txt-muted">{r.brand}</p>
+                    <div className="flex gap-2 mt-1 text-[11px] text-txt-muted">
+                      {r.concentration && <span>{r.concentration}</span>}
+                      {r.launch_year && <span>· {r.launch_year}</span>}
+                      {r.rating && <span>· ★ {r.rating.toFixed(1)}</span>}
+                    </div>
+                    {alreadyOwned && (
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <Check size={10} className="text-accent-fresh" />
+                        <span className="text-[10px] text-accent-fresh">Bereits in Sammlung — erneut hinzufügen?</span>
+                      </div>
+                    )}
+                  </div>
+                  <Plus size={18} className="text-gold shrink-0" />
+                </button>
+              );
+            })}
 
             {!searching && results.length === 0 && query && (
               <p className="text-sm text-txt-muted text-center py-6">

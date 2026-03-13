@@ -10,10 +10,10 @@ interface WishlistPageProps {
   onAdd: (input: FragranceInput) => Promise<any>;
   onMoveToCollection: (id: string) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
-  apiKey?: string | null;
+  existingIds?: Set<string>;
 }
 
-export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, apiKey }: WishlistPageProps) {
+export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, existingIds }: WishlistPageProps) {
   const [addOpen, setAddOpen] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
 
@@ -93,8 +93,8 @@ export function WishlistPage({ wishlist, onAdd, onMoveToCollection, onDelete, ap
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onAdd={onAdd}
-        apiKey={apiKey}
         isWishlist
+        existingIds={existingIds}
       />
     </div>
   );

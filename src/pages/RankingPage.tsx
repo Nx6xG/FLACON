@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { FragranceCard } from '@/components/Collection/FragranceCard';
 import { EmptyState } from '@/components/common';
-import type { Fragrance, Tier } from '@/lib/types';
+import type { Fragrance, Tier, FragranceInput } from '@/lib/types';
 import { Trophy } from 'lucide-react';
 
 const tierConfig: { tier: Tier; label: string; color: string; description: string }[] = [
@@ -15,9 +15,13 @@ const tierConfig: { tier: Tier; label: string; color: string; description: strin
 interface RankingPageProps {
   collection: Fragrance[];
   onSelect: (fragrance: Fragrance) => void;
+  onUpdate: (id: string, updates: Partial<FragranceInput>) => Promise<boolean>;
 }
 
-export function RankingPage({ collection, onSelect }: RankingPageProps) {
+export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps) {
+  const [dragOverTier, setDragOverTier] = useState<Tier | null>(null);
+  const dragItemId = useRef<string | null>(null);
+
   const tierGroups = useMemo(() => {
     const groups = new Map<Tier, Fragrance[]>();
     tierConfig.forEach(({ tier }) => groups.set(tier, []));
@@ -30,7 +34,6 @@ export function RankingPage({ collection, onSelect }: RankingPageProps) {
         groups.set(f.tier!, list);
       });
 
-    // Sort within each tier by tier_rank or overall rating
     groups.forEach((list) => {
       list.sort((a, b) => (a.tier_rank || 999) - (b.tier_rank || 999));
     });
@@ -39,9 +42,39 @@ export function RankingPage({ collection, onSelect }: RankingPageProps) {
   }, [collection]);
 
   const unranked = collection.filter((f) => !f.tier);
-  const hasAnyRanked = collection.some((f) => f.tier);
 
-  if (!hasAnyRanked) {
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    dragItemId.current = id;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, tier: Tier) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverTier(tier);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverTier(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, tier: Tier) => {
+    e.preventDefault();
+    setDragOverTier(null);
+    const id = dragItemId.current;
+    dragItemId.current = null;
+    if (!id) return;
+
+    const fragrance = collection.find((f) => f.id === id);
+    if (!fragrance || fragrance.tier === tier) return;
+
+    const tierItems = tierGroups.get(tier) || [];
+    await onUpdate(id, { tier, tier_rank: tierItems.length + 1 });
+  };
+
+  // Empty state only when nothing is ranked AND nothing to rank
+  if (collection.length === 0) {
     return (
       <div>
         <h1 className="font-display text-3xl font-light text-txt mb-6">
@@ -50,7 +83,7 @@ export function RankingPage({ collection, onSelect }: RankingPageProps) {
         <EmptyState
           icon={<Trophy size={48} />}
           title="Noch keine Rankings"
-          description="Öffne ein Parfum in deiner Sammlung und vergib ein Tier (S bis D), um dein persönliches Ranking aufzubauen."
+          description="Füge Parfums zu deiner Sammlung hinzu, um sie in Tiers einzuordnen."
         />
       </div>
     );
@@ -65,8 +98,17 @@ export function RankingPage({ collection, onSelect }: RankingPageProps) {
       <div className="space-y-6">
         {tierConfig.map(({ tier, label, color, description }) => {
           const items = tierGroups.get(tier) || [];
+          const isOver = dragOverTier === tier;
           return (
-            <div key={tier} className="bg-surface border border-border rounded overflow-hidden">
+            <div
+              key={tier}
+              className={`bg-surface border rounded overflow-hidden transition-all ${
+                isOver ? 'border-gold ring-1 ring-gold/30' : 'border-border'
+              }`}
+              onDragOver={(e) => handleDragOver(e, tier)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, tier)}
+            >
               <div
                 className="flex items-center gap-3 px-4 py-3 border-b"
                 style={{ borderColor: `${color}33` }}
@@ -91,11 +133,22 @@ export function RankingPage({ collection, onSelect }: RankingPageProps) {
               {items.length > 0 ? (
                 <div className="p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                   {items.map((f) => (
-                    <FragranceCard key={f.id} fragrance={f} onClick={() => onSelect(f)} compact />
+                    <div
+                      key={f.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, f.id)}
+                      className="cursor-grab active:cursor-grabbing"
+                    >
+                      <FragranceCard fragrance={f} onClick={() => onSelect(f)} compact />
+                    </div>
                   ))}
                 </div>
               ) : (
-                <div className="p-4 text-center text-sm text-txt-muted">Leer</div>
+                <div className={`p-4 text-center text-sm transition-colors ${
+                  isOver ? 'text-gold' : 'text-txt-muted'
+                }`}>
+                  {isOver ? 'Hier ablegen' : 'Leer'}
+                </div>
               )}
             </div>
           );
@@ -104,12 +157,20 @@ export function RankingPage({ collection, onSelect }: RankingPageProps) {
 
       {unranked.length > 0 && (
         <div className="mt-8">
-          <h2 className="font-display text-xl text-txt-dim mb-3">
+          <h2 className="font-display text-xl text-txt-dim mb-1">
             Noch nicht gerankt ({unranked.length})
           </h2>
+          <p className="text-xs text-txt-muted mb-3">Ziehe Parfums in einen Tier, um sie einzuordnen</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
             {unranked.map((f) => (
-              <FragranceCard key={f.id} fragrance={f} onClick={() => onSelect(f)} compact />
+              <div
+                key={f.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, f.id)}
+                className="cursor-grab active:cursor-grabbing"
+              >
+                <FragranceCard fragrance={f} onClick={() => onSelect(f)} compact />
+              </div>
             ))}
           </div>
         </div>
