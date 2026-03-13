@@ -7,6 +7,9 @@ import { CollectionPage } from '@/pages/CollectionPage';
 import { SearchPage } from '@/pages/SearchPage';
 import { RankingPage } from '@/pages/RankingPage';
 import { WishlistPage } from '@/pages/WishlistPage';
+import { WearPage } from '@/pages/WearPage';
+import { ComparePage } from '@/pages/ComparePage';
+import { TimelinePage } from '@/pages/TimelinePage';
 import { StatsPage } from '@/pages/StatsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { SharePage } from '@/pages/SharePage';
@@ -14,6 +17,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { FragranceDetail } from '@/components/Collection/FragranceDetail';
 import { useToast, ToastContainer } from '@/components/common';
 import { usePublicShare } from '@/hooks/usePublicShare';
+import { useWearLog } from '@/hooks/useWearLog';
 import type { Fragrance, FragranceInput } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -31,8 +35,10 @@ export default function App() {
   } = useCollection(user?.id);
 
   const [rankingSelected, setRankingSelected] = useState<Fragrance | null>(null);
+  const [timelineSelected, setTimelineSelected] = useState<Fragrance | null>(null);
   const { toasts, show: showToast, dismiss: dismissToast } = useToast();
   const { shareUrl } = usePublicShare(user?.id);
+  const { entries: wearEntries, loading: wearLoading, logWear, removeEntry: removeWearEntry } = useWearLog(user?.id);
 
   // Show collection errors as toasts
   useEffect(() => {
@@ -121,6 +127,7 @@ export default function App() {
                     existingIds={existingKeys}
                     shareUrl={shareUrl}
                     onToast={showToast}
+                    onWear={logWear}
                   />
                 }
               />
@@ -140,6 +147,32 @@ export default function App() {
                     collection={collection}
                     onSelect={setRankingSelected}
                     onUpdate={updateFragrance}
+                  />
+                }
+              />
+              <Route
+                path="/wear"
+                element={
+                  <WearPage
+                    collection={collection}
+                    entries={wearEntries}
+                    loading={wearLoading}
+                    onLog={logWear}
+                    onRemove={removeWearEntry}
+                    onToast={showToast}
+                  />
+                }
+              />
+              <Route
+                path="/compare"
+                element={<ComparePage collection={collection} />}
+              />
+              <Route
+                path="/timeline"
+                element={
+                  <TimelinePage
+                    collection={collection}
+                    onSelect={setTimelineSelected}
                   />
                 }
               />
@@ -181,6 +214,16 @@ export default function App() {
           fragrance={rankingSelected}
           open={!!rankingSelected}
           onClose={() => setRankingSelected(null)}
+          onSave={updateFragrance}
+          onDelete={deleteFragrance}
+          onToast={showToast}
+        />
+
+        {/* Detail modal for timeline page */}
+        <FragranceDetail
+          fragrance={timelineSelected}
+          open={!!timelineSelected}
+          onClose={() => setTimelineSelected(null)}
           onSave={updateFragrance}
           onDelete={deleteFragrance}
           onToast={showToast}

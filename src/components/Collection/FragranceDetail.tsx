@@ -3,7 +3,7 @@ import { Modal, Button, Input, Textarea, Select, StarRating, TierBadge } from '@
 import { RadarChart } from '@/components/Rating/RadarChart';
 import { useImageFetch } from '@/hooks/useImageFetch';
 import type { Fragrance, FragranceInput, FragranceNote, Concentration, FragranceFamily, Season, Tier, RatingDetails } from '@/lib/types';
-import { Trash2, Droplets, Loader2, Pencil } from 'lucide-react';
+import { Trash2, Droplets, Loader2, Pencil, SprayCan } from 'lucide-react';
 
 const concentrationOptions: { value: Concentration; label: string }[] = [
   { value: 'Parfum', label: 'Parfum' },
@@ -59,6 +59,7 @@ interface FragranceDetailProps {
   onToast?: (message: string) => void;
   collection?: Fragrance[];
   onSelect?: (f: Fragrance) => void;
+  onWear?: (fragranceId: string) => Promise<boolean>;
 }
 
 const layerConfig = {
@@ -147,7 +148,7 @@ function findSimilar(fragrance: Fragrance, collection: Fragrance[], max = 3): Fr
     .map((r) => r.fragrance);
 }
 
-export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, onToast, collection, onSelect }: FragranceDetailProps) {
+export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, onToast, collection, onSelect, onWear }: FragranceDetailProps) {
   const [tab, setTab] = useState<'info' | 'rating' | 'notes'>('info');
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -247,6 +248,20 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
             {confirmDelete ? 'Wirklich löschen?' : 'Löschen'}
           </Button>
           <div className="flex gap-2">
+            {onWear && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  const success = await onWear(fragrance.id);
+                  if (success) onToast?.(`${fragrance.name} als getragen eingetragen`);
+                }}
+                title="Heute als getragen eintragen"
+              >
+                <SprayCan size={14} />
+                Tragen
+              </Button>
+            )}
             <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? 'Speichert...' : 'Speichern'}

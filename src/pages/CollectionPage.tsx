@@ -5,7 +5,8 @@ import { FragranceOfTheDay } from '@/components/Collection/FragranceOfTheDay';
 import { AddFragranceModal } from '@/components/Search/AddFragranceModal';
 import { Button, Input, Select, EmptyState } from '@/components/common';
 import type { Fragrance, FragranceInput } from '@/lib/types';
-import { Plus, Library, LayoutGrid, List, Filter, Share2 } from 'lucide-react';
+import { RandomPicker } from '@/components/Collection/RandomPicker';
+import { Plus, Library, LayoutGrid, List, Filter, Share2, Dices } from 'lucide-react';
 
 interface CollectionPageProps {
   collection: Fragrance[];
@@ -16,6 +17,7 @@ interface CollectionPageProps {
   existingIds?: Set<string>;
   shareUrl?: string | null;
   onToast?: (message: string) => void;
+  onWear?: (fragranceId: string) => Promise<boolean>;
 }
 
 function SkeletonCard() {
@@ -34,7 +36,7 @@ function SkeletonCard() {
   );
 }
 
-export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete, existingIds, shareUrl, onToast }: CollectionPageProps) {
+export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete, existingIds, shareUrl, onToast, onWear }: CollectionPageProps) {
   const [selected, setSelected] = useState<Fragrance | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -42,8 +44,9 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
   const [filterFamily, setFilterFamily] = useState('');
   const [filterBrand, setFilterBrand] = useState('');
   const [filterNote, setFilterNote] = useState('');
-  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'name-desc' | 'rating' | 'rating-asc' | 'price' | 'price-asc' | 'fill'>('recent');
+  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'name-desc' | 'rating' | 'rating-asc' | 'price' | 'price-asc' | 'ppm' | 'ppm-desc' | 'fill'>('recent');
   const [showFilters, setShowFilters] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const brands = useMemo(
     () => [...new Set(collection.map((f) => f.brand))].sort(),
@@ -87,6 +90,16 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
       case 'price-asc':
         items.sort((a, b) => (a.purchase_price || 0) - (b.purchase_price || 0));
         break;
+      case 'ppm': {
+        const ppm = (f: typeof items[0]) => f.purchase_price && f.size_ml ? f.purchase_price / f.size_ml : 0;
+        items.sort((a, b) => ppm(a) - ppm(b));
+        break;
+      }
+      case 'ppm-desc': {
+        const ppmD = (f: typeof items[0]) => f.purchase_price && f.size_ml ? f.purchase_price / f.size_ml : 0;
+        items.sort((a, b) => ppmD(b) - ppmD(a));
+        break;
+      }
       case 'fill':
         items.sort((a, b) => a.fill_level - b.fill_level);
         break;
@@ -112,6 +125,16 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
           </p>
         </div>
         <div className="flex gap-2">
+          {collection.length >= 2 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPickerOpen(true)}
+              title="Zufälliger Duft"
+            >
+              <Dices size={14} />
+            </Button>
+          )}
           {shareUrl && (
             <Button
               variant="ghost"
@@ -201,6 +224,8 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
                   { value: 'rating-asc', label: 'Schlechteste Bewertung' },
                   { value: 'price', label: 'Höchster Preis' },
                   { value: 'price-asc', label: 'Niedrigster Preis' },
+                  { value: 'ppm', label: 'Günstigster €/ml' },
+                  { value: 'ppm-desc', label: 'Teuerster €/ml' },
                   { value: 'fill', label: 'Niedrigster Füllstand' },
                 ]}
               />
@@ -259,6 +284,7 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
         onToast={onToast}
         collection={collection}
         onSelect={setSelected}
+        onWear={onWear}
       />
 
       <AddFragranceModal
@@ -266,6 +292,13 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
         onClose={() => setAddOpen(false)}
         onAdd={onAdd}
         existingIds={existingIds}
+      />
+
+      <RandomPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        collection={collection}
+        onSelect={setSelected}
       />
     </div>
   );

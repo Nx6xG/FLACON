@@ -3,6 +3,7 @@ import type { RatingDetails } from '@/lib/types';
 interface RadarChartProps {
   rating: RatingDetails;
   size?: number;
+  compareRating?: RatingDetails;
 }
 
 const labels = [
@@ -14,7 +15,7 @@ const labels = [
   { key: 'versatility', label: 'Vielseitig' },
 ] as const;
 
-export function RadarChart({ rating, size = 200 }: RadarChartProps) {
+export function RadarChart({ rating, size = 200, compareRating }: RadarChartProps) {
   const cx = size / 2;
   const cy = size / 2;
   const maxR = size * 0.38;
@@ -89,6 +90,27 @@ export function RadarChart({ rating, size = 200 }: RadarChartProps) {
           />
         );
       })}
+
+      {/* Compare data fill */}
+      {compareRating && (() => {
+        const comparePoints = labels
+          .map((l, i) => {
+            const val = compareRating[l.key as keyof RatingDetails] || 0;
+            const p = getPoint(i, val);
+            return `${p.x},${p.y}`;
+          })
+          .join(' ');
+        return (
+          <polygon
+            points={comparePoints}
+            fill="#60a5fa"
+            fillOpacity={0.1}
+            stroke="#60a5fa"
+            strokeWidth={1.5}
+            strokeDasharray="4 2"
+          />
+        );
+      })()}
 
       {/* Data fill */}
       <polygon

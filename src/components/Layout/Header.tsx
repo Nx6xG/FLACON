@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Library, Search, Trophy, Heart, BarChart3, Settings, LogOut, Menu, X } from 'lucide-react';
+import { Library, Search, Trophy, Heart, BarChart3, Settings, LogOut, Menu, X, CalendarDays, ArrowLeftRight, Clock } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import type { User } from '@supabase/supabase-js';
 
@@ -13,6 +13,9 @@ const navItems = [
   { to: '/search', icon: Search, label: 'Suche' },
   { to: '/ranking', icon: Trophy, label: 'Ranking' },
   { to: '/wishlist', icon: Heart, label: 'Wunschliste' },
+  { to: '/wear', icon: CalendarDays, label: 'Tagebuch' },
+  { to: '/compare', icon: ArrowLeftRight, label: 'Vergleich' },
+  { to: '/timeline', icon: Clock, label: 'Timeline' },
   { to: '/stats', icon: BarChart3, label: 'Statistiken' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
