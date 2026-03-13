@@ -156,15 +156,15 @@ export function CompareCollectionsPage() {
         {/* Input */}
         <div className="bg-surface border border-border rounded-lg p-4 mb-8">
           <p className="text-xs text-txt-muted uppercase tracking-wider mb-3">Share-Codes eingeben</p>
-          <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-end mb-4">
+          <div className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_1fr] gap-2 sm:gap-3 sm:items-end mb-4">
             <Input
               label="Sammlung A"
               value={codeA}
               onChange={(e) => setCodeA(e.target.value)}
               placeholder="abc12xyz"
             />
-            <div className="pb-2">
-              <ArrowLeftRight size={16} className="text-txt-muted" />
+            <div className="flex justify-center sm:pb-2">
+              <ArrowLeftRight size={16} className="text-txt-muted rotate-90 sm:rotate-0" />
             </div>
             <Input
               label="Sammlung B"
@@ -183,9 +183,9 @@ export function CompareCollectionsPage() {
         {collA && collB && (
           <div className="space-y-6">
             {/* Headers */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               {[{ coll: collA, stats: statsA }, { coll: collB, stats: statsB }].map(({ coll, stats }, idx) => (
-                <div key={idx} className="bg-surface border border-border rounded-lg p-4 text-center">
+                <div key={idx} className="bg-surface border border-border rounded-lg p-3 sm:p-4 text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     {coll.avatar && <img src={coll.avatar} alt="" className="w-6 h-6 rounded-full" />}
                     <span className="text-sm font-medium text-txt">{coll.name}</span>

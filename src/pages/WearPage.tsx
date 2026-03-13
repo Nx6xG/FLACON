@@ -118,28 +118,28 @@ export function WearPage({ collection, entries, loading, onLog, onRemove, onToas
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-display text-3xl font-light text-txt">
+          <h1 className="font-display text-2xl sm:text-3xl font-light text-txt">
             Duft<em className="text-gold italic">tagebuch</em>
           </h1>
-          <p className="text-sm text-txt-muted mt-1">
-            {entries.length} Einträge · {streak > 0 ? `${streak} Tage Streak 🔥` : 'Kein Streak'}
+          <p className="text-xs sm:text-sm text-txt-muted mt-1">
+            {entries.length} Einträge · {streak > 0 ? `${streak} Tage Streak` : 'Kein Streak'}
           </p>
         </div>
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-surface border border-border rounded-lg p-3 text-center">
-          <p className="text-2xl font-display text-gold">{thisMonthEntries.length}</p>
-          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Diesen Monat</p>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+        <div className="bg-surface border border-border rounded-lg p-2 sm:p-3 text-center">
+          <p className="text-xl sm:text-2xl font-display text-gold">{thisMonthEntries.length}</p>
+          <p className="text-[9px] sm:text-[10px] text-txt-muted uppercase tracking-wider">Monat</p>
         </div>
-        <div className="bg-surface border border-border rounded-lg p-3 text-center">
-          <p className="text-2xl font-display text-gold">{entries.length}</p>
-          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Gesamt</p>
+        <div className="bg-surface border border-border rounded-lg p-2 sm:p-3 text-center">
+          <p className="text-xl sm:text-2xl font-display text-gold">{entries.length}</p>
+          <p className="text-[9px] sm:text-[10px] text-txt-muted uppercase tracking-wider">Gesamt</p>
         </div>
-        <div className="bg-surface border border-border rounded-lg p-3 text-center">
-          <p className="text-2xl font-display text-gold">{new Set(entries.map((e) => e.fragrance_id)).size}</p>
-          <p className="text-[10px] text-txt-muted uppercase tracking-wider">Verschiedene</p>
+        <div className="bg-surface border border-border rounded-lg p-2 sm:p-3 text-center">
+          <p className="text-xl sm:text-2xl font-display text-gold">{new Set(entries.map((e) => e.fragrance_id)).size}</p>
+          <p className="text-[9px] sm:text-[10px] text-txt-muted uppercase tracking-wider">Düfte</p>
         </div>
       </div>
 
@@ -157,7 +157,7 @@ export function WearPage({ collection, entries, loading, onLog, onRemove, onToas
 
         <div className="grid grid-cols-7 gap-px text-center">
           {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => (
-            <div key={d} className="text-[9px] text-txt-muted uppercase tracking-wider py-0.5">{d}</div>
+            <div key={d} className="text-[10px] sm:text-[9px] text-txt-muted uppercase tracking-wider py-1 sm:py-0.5">{d}</div>
           ))}
           {calendarDays.map((day, i) => {
             if (day === null) return <div key={`empty-${i}`} />;
@@ -170,7 +170,7 @@ export function WearPage({ collection, entries, loading, onLog, onRemove, onToas
               <button
                 key={day}
                 onClick={() => { setQuickAddDate(dateStr); setQuickAddFragrance(''); }}
-                className={`relative h-8 flex flex-col items-center justify-center rounded-sm text-[11px] transition-all ${
+                className={`relative h-10 sm:h-9 flex flex-col items-center justify-center rounded-sm text-xs sm:text-[11px] transition-all ${
                   isToday ? 'ring-1 ring-gold/40' : ''
                 } ${hasEntries ? 'bg-gold/10 text-gold' : 'text-txt-dim hover:bg-surface-2'} ${
                   quickAddDate === dateStr ? '!bg-gold/20 ring-1 ring-gold' : ''

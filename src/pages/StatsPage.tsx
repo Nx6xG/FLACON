@@ -56,16 +56,16 @@ export function StatsPage({ fragrances }: StatsPageProps) {
 
   return (
     <div className="pb-8">
-      <h1 className="font-display text-3xl font-light text-txt mb-2">
+      <h1 className="font-display text-2xl sm:text-3xl font-light text-txt mb-2">
         Deine <em className="text-gold italic">Statistiken</em>
       </h1>
-      <p className="text-sm text-txt-muted mb-8">
+      <p className="text-xs sm:text-sm text-txt-muted mb-6 sm:mb-8">
         {stats.totalCount} Düfte in deiner Sammlung
         {stats.wishlistCount > 0 && ` · ${stats.wishlistCount} auf der Wunschliste`}
       </p>
 
       {/* === Hero Stats === */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-6">
         <HeroCard
           value={`${stats.totalPurchaseValue.toFixed(0)} €`}
           label="Sammlungswert"
@@ -82,7 +82,7 @@ export function StatsPage({ fragrances }: StatsPageProps) {
       </div>
 
       {/* === Metric Pills === */}
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-6 sm:mb-8">
         <Pill icon={<Star size={12} />} value={stats.avgRating > 0 ? stats.avgRating.toFixed(1) : '—'} label="Ø Bewertung" />
         <Pill icon={<TrendingUp size={12} />} value={stats.avgPricePerMl > 0 ? `${stats.avgPricePerMl.toFixed(2)} €` : '—'} label="Ø €/ml" />
         <Pill icon={<Droplets size={12} />} value={`${stats.avgFillLevel.toFixed(0)}%`} label="Ø Füllstand" />
@@ -246,7 +246,7 @@ export function StatsPage({ fragrances }: StatsPageProps) {
         {avgRadar && avgRadar.sillage > 0 && (
           <SectionCard title="Ø Bewertungsprofil" icon={<Star size={16} />}>
             <div className="flex justify-center">
-              <RadarChart rating={avgRadar} size={200} />
+              <RadarChart rating={avgRadar} size={170} />
             </div>
           </SectionCard>
         )}
@@ -350,9 +350,9 @@ export function StatsPage({ fragrances }: StatsPageProps) {
 
 function HeroCard({ value, label, sub, accent }: { value: string; label: string; sub?: string; accent?: boolean }) {
   return (
-    <div className={`relative overflow-hidden rounded-lg border p-4 ${accent ? 'bg-gradient-to-br from-gold/10 via-surface to-surface border-gold/20' : 'bg-surface border-border'}`}>
-      <p className={`font-display text-2xl font-bold ${accent ? 'text-gold' : 'text-txt'}`}>{value}</p>
-      <p className="text-xs text-txt-muted uppercase tracking-wider mt-1">{label}</p>
+    <div className={`relative overflow-hidden rounded-lg border p-3 sm:p-4 ${accent ? 'bg-gradient-to-br from-gold/10 via-surface to-surface border-gold/20' : 'bg-surface border-border'}`}>
+      <p className={`font-display text-xl sm:text-2xl font-bold ${accent ? 'text-gold' : 'text-txt'}`}>{value}</p>
+      <p className="text-[10px] sm:text-xs text-txt-muted uppercase tracking-wider mt-1">{label}</p>
       {sub && <p className="text-[11px] text-txt-muted mt-0.5">{sub}</p>}
     </div>
   );
@@ -360,10 +360,10 @@ function HeroCard({ value, label, sub, accent }: { value: string; label: string;
 
 function Pill({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-surface border border-border rounded-full">
+    <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 bg-surface border border-border rounded-full">
       <span className="text-gold">{icon}</span>
-      <span className="text-sm font-semibold text-txt">{value}</span>
-      <span className="text-[11px] text-txt-muted">{label}</span>
+      <span className="text-xs sm:text-sm font-semibold text-txt">{value}</span>
+      <span className="text-[10px] sm:text-[11px] text-txt-muted">{label}</span>
     </div>
   );
 }

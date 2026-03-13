@@ -120,10 +120,10 @@ function SeasonCompare({ seasonsA, seasonsB }: { seasonsA: Season[]; seasonsB: S
 
 function InfoRow({ label, valueA, valueB, highlight }: { label: string; valueA: string; valueB: string; highlight?: 'a' | 'b' | null }) {
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-2.5">
-      <span className={`text-sm text-right tabular-nums ${highlight === 'a' ? 'text-gold font-semibold' : 'text-txt'}`}>{valueA}</span>
-      <span className="text-[10px] text-txt-muted uppercase tracking-wider min-w-[80px] text-center">{label}</span>
-      <span className={`text-sm tabular-nums ${highlight === 'b' ? 'text-gold font-semibold' : 'text-txt'}`}>{valueB}</span>
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3 py-2.5">
+      <span className={`text-xs sm:text-sm text-right tabular-nums ${highlight === 'a' ? 'text-gold font-semibold' : 'text-txt'}`}>{valueA}</span>
+      <span className="text-[9px] sm:text-[10px] text-txt-muted uppercase tracking-wider min-w-[60px] sm:min-w-[80px] text-center">{label}</span>
+      <span className={`text-xs sm:text-sm tabular-nums ${highlight === 'b' ? 'text-gold font-semibold' : 'text-txt'}`}>{valueB}</span>
     </div>
   );
 }
@@ -184,24 +184,24 @@ export function ComparePage({ collection }: ComparePageProps) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="font-display text-3xl font-light text-txt">
+        <h1 className="font-display text-2xl sm:text-3xl font-light text-txt">
           Duft<em className="text-gold italic">vergleich</em>
         </h1>
-        <p className="text-sm text-txt-muted mt-1">Vergleiche zwei Düfte aus deiner Sammlung</p>
+        <p className="text-xs sm:text-sm text-txt-muted mt-1">Vergleiche zwei Düfte aus deiner Sammlung</p>
       </div>
 
       {/* Selection */}
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-3 mb-8 items-end">
+      <div className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_1fr] gap-2 sm:gap-3 mb-8 sm:items-end">
         <Select
           label="Duft A"
           value={idA}
           onChange={(e) => setIdA(e.target.value)}
           options={options}
         />
-        <div className="pb-2">
+        <div className="flex justify-center sm:pb-2">
           <button
             onClick={() => { setIdA(idB); setIdB(idA); }}
-            className="p-2 text-txt-muted hover:text-gold transition-colors"
+            className="p-2 text-txt-muted hover:text-gold transition-colors rotate-90 sm:rotate-0"
             title="Tauschen"
           >
             <ArrowLeftRight size={18} />
@@ -218,14 +218,14 @@ export function ComparePage({ collection }: ComparePageProps) {
       {fragA && fragB ? (
         <div className="space-y-4">
           {/* Header cards */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
             {[fragA, fragB].map((f, idx) => {
               const ppm = f.purchase_price && f.size_ml ? (f.purchase_price / f.size_ml).toFixed(2) : null;
               return (
-                <div key={f.id} className={`bg-surface border rounded-lg p-4 flex flex-col items-center text-center ${
+                <div key={f.id} className={`bg-surface border rounded-lg p-3 sm:p-4 flex flex-col items-center text-center ${
                   idx === 0 ? 'border-gold/20' : 'border-blue-400/20'
                 }`}>
-                  <div className="w-20 h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden mb-3">
+                  <div className="w-14 h-20 sm:w-20 sm:h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden mb-2 sm:mb-3">
                     <CompareImage fragrance={f} />
                   </div>
                   <h3 className="text-sm font-medium text-txt">{f.name}</h3>
@@ -285,7 +285,7 @@ export function ComparePage({ collection }: ComparePageProps) {
             <div className="bg-surface border border-border rounded-lg p-4">
               <h2 className="text-xs text-txt-muted uppercase tracking-wider mb-3 text-center">Radar-Overlay</h2>
               <div className="flex justify-center">
-                <RadarChart rating={fragA.rating} size={220} compareRating={fragB.rating} />
+                <RadarChart rating={fragA.rating} size={180} compareRating={fragB.rating} />
               </div>
             </div>
           )}

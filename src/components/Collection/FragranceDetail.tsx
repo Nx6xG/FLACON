@@ -257,12 +257,12 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
       title={name || fragrance.name}
       wide
       footer={
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
           <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting}>
             <Trash2 size={14} />
             {confirmDelete ? 'Wirklich löschen?' : 'Löschen'}
           </Button>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-end">
             {onWear && (
               <Button
                 variant="ghost"
@@ -281,11 +281,11 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
                 title="Heute als getragen eintragen"
               >
                 <SprayCan size={14} />
-                Tragen
+                <span className="hidden sm:inline">Tragen</span>
               </Button>
             )}
-            <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button variant="ghost" size="sm" onClick={onClose}>Abbrechen</Button>
+            <Button size="sm" onClick={handleSave} disabled={saving}>
               {saving ? 'Speichert...' : 'Speichern'}
             </Button>
           </div>
@@ -293,8 +293,8 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
       }
     >
       {/* Header with image and basic info */}
-      <div className="flex gap-4 mb-6">
-        <div className="w-20 h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden shrink-0">
+      <div className="flex gap-3 sm:gap-4 mb-6">
+        <div className="w-16 h-22 sm:w-20 sm:h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden shrink-0">
           {imageUrl ? (
             <img src={imageUrl} alt={fragrance.name} loading="lazy" className="w-full h-full object-cover" />
           ) : imageLoading ? (
@@ -525,7 +525,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
           </div>
           {rating.sillage > 0 && (
             <div className="mt-4 flex justify-center">
-              <RadarChart rating={rating} size={220} />
+              <RadarChart rating={rating} size={180} />
             </div>
           )}
         </div>

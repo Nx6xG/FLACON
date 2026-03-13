@@ -285,11 +285,11 @@ export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-light text-txt mb-6">
+      <h1 className="font-display text-2xl sm:text-3xl font-light text-txt mb-6">
         Tier <em className="text-gold italic">Ranking</em>
       </h1>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {tierConfig.map(({ tier, label, color, description }) => {
           const items = tierGroups.get(tier) || [];
           const isOver = dragOverTarget === tier;
@@ -326,7 +326,7 @@ export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps
               </div>
 
               {items.length > 0 ? (
-                <div className="p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                <div className="p-2 sm:p-3 flex flex-col sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5 sm:gap-2">
                   {items.map((f, i) => (
                     <DraggableCard key={f.id} fragrance={f} tier={tier} index={i} />
                   ))}
@@ -361,7 +361,7 @@ export function RankingPage({ collection, onSelect, onUpdate }: RankingPageProps
         <p className="text-xs text-txt-muted mb-3">Ziehe Parfums in einen Tier oder hierher zurück</p>
 
         {unranked.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+          <div className="flex flex-col sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5 sm:gap-2">
             {unranked.map((f) => (
               <DraggableCard key={f.id} fragrance={f} />
             ))}

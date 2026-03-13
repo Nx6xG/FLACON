@@ -94,9 +94,9 @@ export function Modal({ open, onClose, title, children, footer, wide }: ModalPro
       aria-modal="true"
       aria-label={title}
     >
-      <div ref={modalRef} className={`bg-surface border border-border rounded-t-lg sm:rounded-lg w-full ${wide ? 'sm:max-w-2xl' : 'sm:max-w-lg'} max-h-[90vh] flex flex-col animate-slide-up`}>
+      <div ref={modalRef} className={`bg-surface border border-border rounded-t-lg sm:rounded-lg w-full ${wide ? 'sm:max-w-2xl' : 'sm:max-w-lg'} max-h-[90vh] sm:max-h-[85vh] flex flex-col animate-slide-up pb-[env(safe-area-inset-bottom)]`}>
         <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
-          <h2 className="font-display text-xl text-txt">{title}</h2>
+          <h2 className="font-display text-lg sm:text-xl text-txt truncate mr-2">{title}</h2>
           <button onClick={onClose} className="text-txt-muted hover:text-txt transition-colors p-1" aria-label="Schließen">
             <X size={20} />
           </button>
@@ -120,7 +120,7 @@ interface StarRatingProps {
 export function StarRating({ value, max = 10, onChange, size = 'md', label }: StarRatingProps) {
   const [hover, setHover] = useState(0);
   const isReadonly = !onChange;
-  const px = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
+  const px = size === 'sm' ? 'w-5 h-5 sm:w-4 sm:h-4' : 'w-6 h-6 sm:w-5 sm:h-5';
 
   return (
     <div className="flex flex-col gap-1">
@@ -315,7 +315,7 @@ export function useToast() {
 export function ToastContainer({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss?: (id: number) => void }) {
   if (toasts.length === 0) return null;
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 items-center">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 items-center w-[calc(100%-2rem)] sm:w-auto pb-[env(safe-area-inset-bottom)]">
       {toasts.map((t) => (
         <div
           key={t.id}

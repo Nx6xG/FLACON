@@ -85,7 +85,7 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-light text-txt mb-6">
+      <h1 className="font-display text-2xl sm:text-3xl font-light text-txt mb-4 sm:mb-6">
         Parfums <em className="text-gold italic">entdecken</em>
       </h1>
 

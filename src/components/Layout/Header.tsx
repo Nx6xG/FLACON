@@ -74,7 +74,7 @@ export function Header({ user, onSignOut }: HeaderProps) {
     <>
       <header className={`sticky top-0 z-50 bg-bg/85 backdrop-blur-xl border-b border-border pt-[env(safe-area-inset-top)] transition-transform duration-300 ${hidden && !mobileOpen ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
-          <NavLink to="/" className="font-display text-2xl font-light tracking-[6px] text-gold uppercase">
+          <NavLink to="/" className="font-display text-xl sm:text-2xl font-light tracking-[4px] sm:tracking-[6px] text-gold uppercase">
             <span className="font-semibold">F</span>lacon
           </NavLink>
 

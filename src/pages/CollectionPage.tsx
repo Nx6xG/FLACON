@@ -121,16 +121,16 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
   return (
     <div>
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-light text-txt">
+      <div className="flex items-center justify-between mb-6 gap-2">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl sm:text-3xl font-light text-txt">
             Meine <em className="text-gold italic">Sammlung</em>
           </h1>
-          <p className="text-sm text-txt-muted mt-1">
-            {collection.length} Düfte{totalValue > 0 && ` · ${totalValue.toFixed(0)} € Gesamtwert`}
+          <p className="text-xs sm:text-sm text-txt-muted mt-1 truncate">
+            {collection.length} Düfte{totalValue > 0 && ` · ${totalValue.toFixed(0)} €`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2 shrink-0">
           {collection.length >= 2 && (
             <>
               <Button
@@ -164,9 +164,9 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
               <Share2 size={14} />
             </Button>
           )}
-          <Button onClick={() => setAddOpen(true)}>
+          <Button size="sm" onClick={() => setAddOpen(true)}>
             <Plus size={16} />
-            Hinzufügen
+            <span className="hidden sm:inline">Hinzufügen</span>
           </Button>
         </div>
       </div>
@@ -199,7 +199,7 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2">
               <Select
                 value={filterFamily}
                 onChange={(e) => setFilterFamily(e.target.value)}

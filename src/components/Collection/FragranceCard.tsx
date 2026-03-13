@@ -123,7 +123,7 @@ export function FragranceCard({ fragrance, onClick, compact }: FragranceCardProp
           )}
 
           {purchase_price != null ? (
-            <span className="text-[11px] text-txt-muted tabular-nums">
+            <span className="text-[10px] sm:text-[11px] text-txt-muted tabular-nums">
               {purchase_price.toFixed(0)} €{size_ml != null && ` · ${(purchase_price / size_ml).toFixed(2)} €/ml`}
             </span>
           ) : (
