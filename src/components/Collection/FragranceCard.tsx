@@ -1,5 +1,5 @@
 import type { Fragrance } from '@/lib/types';
-import { StarRating, TierBadge, Badge } from '@/components/common';
+import { TierBadge, Badge } from '@/components/common';
 import { useImageFetch } from '@/hooks/useImageFetch';
 import { Droplets, Loader2 } from 'lucide-react';
 
@@ -99,21 +99,28 @@ export function FragranceCard({ fragrance, onClick, compact }: FragranceCardProp
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
-          <Badge color={familyColors[family]}>{family}</Badge>
+          {family !== 'Other' && <Badge color={familyColors[family]}>{family}</Badge>}
           <Badge>{concentration}</Badge>
         </div>
 
         <div className="flex items-center justify-between mt-1">
           {rating?.overall ? (
-            <StarRating value={rating.overall} size="sm" />
+            <div className="flex items-center gap-1">
+              <svg viewBox="0 0 20 20" fill="#c9a96e" className="w-3.5 h-3.5">
+                <path d="M10 1l2.39 4.84L17.82 7l-3.91 3.81.92 5.39L10 13.47l-4.83 2.73.92-5.39L2.18 7l5.43-1.16L10 1z" />
+              </svg>
+              <span className="text-xs text-txt-dim font-body tabular-nums">{rating.overall}/10</span>
+            </div>
           ) : (
             <span className="text-xs text-txt-muted italic">Nicht bewertet</span>
           )}
 
-          {purchase_price != null && size_ml != null && (
+          {purchase_price != null ? (
             <span className="text-[11px] text-txt-muted tabular-nums">
-              {(purchase_price / size_ml).toFixed(2)} €/ml
+              {purchase_price.toFixed(0)} €{size_ml != null && ` · ${(purchase_price / size_ml).toFixed(2)} €/ml`}
             </span>
+          ) : (
+            <span className="text-[11px] text-txt-muted/50 italic">Kein Preis</span>
           )}
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Fragrance, FragranceInput } from '@/lib/types';
 
@@ -7,9 +7,11 @@ export function useCollection(userId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const initialLoadDone = useRef(false);
+
   const fetchAll = useCallback(async () => {
     if (!userId) return;
-    setLoading(true);
+    if (!initialLoadDone.current) setLoading(true);
     setError(null);
 
     const { data, error: err } = await supabase
@@ -24,9 +26,11 @@ export function useCollection(userId: string | undefined) {
       setFragrances((data as Fragrance[]) || []);
     }
     setLoading(false);
+    initialLoadDone.current = true;
   }, [userId]);
 
   useEffect(() => {
+    initialLoadDone.current = false;
     fetchAll();
   }, [fetchAll]);
 

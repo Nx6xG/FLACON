@@ -62,7 +62,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete }: 
       setTab('info');
       setConfirmDelete(false);
     }
-  }, [fragrance]);
+  }, [fragrance?.id]);
 
   if (!fragrance) return null;
 
