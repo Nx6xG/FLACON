@@ -12,7 +12,7 @@ interface SearchPageProps {
 
 export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
   const [query, setQuery] = useState('');
-  const { results, loading, error, search, history, clearHistory } = useFragellaSearch();
+  const { results, loading, error, search, clear, history, clearHistory } = useFragellaSearch();
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'default' | 'rating' | 'price' | 'year'>('default');
@@ -37,6 +37,12 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) search(query);
+  };
+
+  // Clear results when query is emptied so history becomes visible
+  const handleQueryChange = (val: string) => {
+    setQuery(val);
+    if (!val.trim()) clear();
   };
 
   const handleAdd = async (result: FragellaSearchResult, isWishlist: boolean) => {
@@ -84,7 +90,7 @@ export function SearchPage({ onAdd, existingIds }: SearchPageProps) {
       <form onSubmit={handleSearch} className="flex gap-2 mb-6">
         <Input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleQueryChange(e.target.value)}
           placeholder="Suche nach Name, Marke... z.B. Aventus, Tom Ford"
           className="flex-1"
         />

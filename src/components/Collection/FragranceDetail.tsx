@@ -203,30 +203,44 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
 
       {/* Tab content */}
       {tab === 'info' && (
-        editing ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <Input
-              label="Marke"
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-            />
-            <Select
-              label="Konzentration"
-              value={concentration}
-              onChange={(e) => setConcentration(e.target.value as Concentration)}
-              options={concentrationOptions}
-            />
-            <Select
-              label="Duftfamilie"
-              value={family}
-              onChange={(e) => setFamily(e.target.value as FragranceFamily)}
-              options={familyOptions}
-            />
+        <div className="space-y-4">
+          {/* Parfum-Stammdaten — nur mit Stift editierbar */}
+          {editing ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <Input
+                label="Marke"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+              />
+              <Select
+                label="Konzentration"
+                value={concentration}
+                onChange={(e) => setConcentration(e.target.value as Concentration)}
+                options={concentrationOptions}
+              />
+              <Select
+                label="Duftfamilie"
+                value={family}
+                onChange={(e) => setFamily(e.target.value as FragranceFamily)}
+                options={familyOptions}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <DetailRow label="Name" value={name} />
+              <DetailRow label="Marke" value={brand} />
+              <DetailRow label="Konzentration" value={concentrationOptions.find((o) => o.value === concentration)?.label || concentration} />
+              <DetailRow label="Duftfamilie" value={familyOptions.find((o) => o.value === family)?.label || family} />
+            </div>
+          )}
+
+          {/* Preis, Größe, Datum — immer editierbar */}
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
             <Input
               label="Kaufpreis (€)"
               type="number"
@@ -283,35 +297,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
               />
             </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-              <DetailRow label="Name" value={name} />
-              <DetailRow label="Marke" value={brand} />
-              <DetailRow label="Konzentration" value={concentrationOptions.find((o) => o.value === concentration)?.label || concentration} />
-              <DetailRow label="Duftfamilie" value={familyOptions.find((o) => o.value === family)?.label || family} />
-              <DetailRow label="Kaufpreis" value={purchasePrice ? `${purchasePrice} €` : '—'} />
-              <DetailRow label="Marktwert" value={marketPrice ? `${marketPrice} €` : '—'} />
-              <DetailRow label="Größe" value={sizeMl ? `${sizeMl} ml` : '—'} />
-              <DetailRow label="Kaufdatum" value={purchaseDate || '—'} />
-            </div>
-            <div className="pt-1">
-              <span className="text-xs text-txt-muted uppercase tracking-wider">Füllstand</span>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="flex-1 h-2 bg-surface-2 rounded-full overflow-hidden">
-                  <div className="h-full bg-gold rounded-full transition-all" style={{ width: `${fillLevel}%` }} />
-                </div>
-                <span className="text-xs text-txt-dim w-8 text-right">{fillLevel}%</span>
-              </div>
-            </div>
-            {tier && (
-              <div>
-                <span className="text-xs text-txt-muted uppercase tracking-wider">Tier</span>
-                <div className="mt-1"><TierBadge tier={tier as Tier} /></div>
-              </div>
-            )}
-          </div>
-        )
+        </div>
       )}
 
       {tab === 'rating' && (
