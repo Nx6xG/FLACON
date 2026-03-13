@@ -253,8 +253,15 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
                 variant="ghost"
                 size="sm"
                 onClick={async () => {
-                  const success = await onWear(fragrance.id);
-                  if (success) onToast?.(`${fragrance.name} als getragen eingetragen`);
+                  try {
+                    const success = await onWear(fragrance.id);
+                    onToast?.(success
+                      ? `${fragrance.name} als getragen eingetragen`
+                      : 'Fehler — hast du die wear_log Tabelle erstellt?'
+                    );
+                  } catch {
+                    onToast?.('Fehler beim Eintragen');
+                  }
                 }}
                 title="Heute als getragen eintragen"
               >

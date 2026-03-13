@@ -144,20 +144,20 @@ export function WearPage({ collection, entries, loading, onLog, onRemove, onToas
       </div>
 
       {/* Calendar */}
-      <div className="bg-surface border border-border rounded-lg p-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={prevMonth} className="p-1.5 text-txt-muted hover:text-txt transition-colors">
-            <ChevronLeft size={18} />
+      <div className="bg-surface border border-border rounded-lg p-3 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <button onClick={prevMonth} className="p-1 text-txt-muted hover:text-txt transition-colors">
+            <ChevronLeft size={16} />
           </button>
-          <span className="text-sm font-medium text-txt capitalize">{monthName}</span>
-          <button onClick={nextMonth} className="p-1.5 text-txt-muted hover:text-txt transition-colors">
-            <ChevronRight size={18} />
+          <span className="text-xs font-medium text-txt capitalize">{monthName}</span>
+          <button onClick={nextMonth} className="p-1 text-txt-muted hover:text-txt transition-colors">
+            <ChevronRight size={16} />
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center">
+        <div className="grid grid-cols-7 gap-px text-center">
           {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => (
-            <div key={d} className="text-[10px] text-txt-muted uppercase tracking-wider py-1">{d}</div>
+            <div key={d} className="text-[9px] text-txt-muted uppercase tracking-wider py-0.5">{d}</div>
           ))}
           {calendarDays.map((day, i) => {
             if (day === null) return <div key={`empty-${i}`} />;
@@ -170,7 +170,7 @@ export function WearPage({ collection, entries, loading, onLog, onRemove, onToas
               <button
                 key={day}
                 onClick={() => { setQuickAddDate(dateStr); setQuickAddFragrance(''); }}
-                className={`relative aspect-square flex flex-col items-center justify-center rounded-sm text-xs transition-all ${
+                className={`relative h-8 flex flex-col items-center justify-center rounded-sm text-[11px] transition-all ${
                   isToday ? 'ring-1 ring-gold/40' : ''
                 } ${hasEntries ? 'bg-gold/10 text-gold' : 'text-txt-dim hover:bg-surface-2'} ${
                   quickAddDate === dateStr ? '!bg-gold/20 ring-1 ring-gold' : ''
@@ -178,7 +178,7 @@ export function WearPage({ collection, entries, loading, onLog, onRemove, onToas
               >
                 <span className={hasEntries ? 'font-semibold' : ''}>{day}</span>
                 {hasEntries && (
-                  <div className="flex gap-0.5 mt-0.5">
+                  <div className="flex gap-px absolute bottom-0.5">
                     {dayEntries.slice(0, 3).map((_, idx) => (
                       <div key={idx} className="w-1 h-1 rounded-full bg-gold" />
                     ))}

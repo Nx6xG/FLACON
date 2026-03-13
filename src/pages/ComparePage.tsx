@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Select } from '@/components/common';
+import { Select, TierBadge } from '@/components/common';
 import { RadarChart } from '@/components/Rating/RadarChart';
 import { useImageFetch } from '@/hooks/useImageFetch';
-import type { Fragrance, RatingDetails } from '@/lib/types';
-import { Droplets, ArrowLeftRight, Minus, Equal, Trophy } from 'lucide-react';
+import type { Fragrance, RatingDetails, FragranceNote, Season } from '@/lib/types';
+import { Droplets, ArrowLeftRight, Trophy, Star, Ruler, DollarSign } from 'lucide-react';
 
 interface ComparePageProps {
   collection: Fragrance[];
@@ -18,34 +18,112 @@ function CompareImage({ fragrance }: { fragrance: Fragrance }) {
   );
 }
 
-function StatCompare({ label, valA, valB, suffix = '', higher = 'better' }: {
-  label: string;
-  valA: number | null;
-  valB: number | null;
-  suffix?: string;
-  higher?: 'better' | 'worse' | 'neutral';
-}) {
-  const a = valA ?? 0;
-  const b = valB ?? 0;
-  const diff = a - b;
-  const winner = diff > 0 ? 'a' : diff < 0 ? 'b' : null;
-  const isBetter = higher === 'better' ? winner : higher === 'worse' ? (winner === 'a' ? 'b' : winner === 'b' ? 'a' : null) : null;
+function RatingBar({ label, valA, valB }: { label: string; valA: number; valB: number }) {
+  const maxVal = 10;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-txt-muted uppercase tracking-wider">{label}</span>
+        <div className="flex items-center gap-3 text-xs tabular-nums">
+          <span className={valA >= valB && valA > 0 ? 'text-gold font-semibold' : 'text-txt-dim'}>{valA || '—'}</span>
+          <span className="text-txt-muted/40">vs</span>
+          <span className={valB >= valA && valB > 0 ? 'text-blue-400 font-semibold' : 'text-txt-dim'}>{valB || '—'}</span>
+        </div>
+      </div>
+      <div className="flex gap-1 h-1.5">
+        <div className="flex-1 bg-surface-2 rounded-full overflow-hidden">
+          <div className="h-full bg-gold/70 rounded-full transition-all" style={{ width: `${(valA / maxVal) * 100}%` }} />
+        </div>
+        <div className="flex-1 bg-surface-2 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-400/70 rounded-full transition-all" style={{ width: `${(valB / maxVal) * 100}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const layerConfig = {
+  top: { label: 'Kopf', color: 'text-accent-citrus', bg: 'bg-accent-citrus/10', border: 'border-accent-citrus/20' },
+  middle: { label: 'Herz', color: 'text-accent-floral', bg: 'bg-accent-floral/10', border: 'border-accent-floral/20' },
+  base: { label: 'Basis', color: 'text-accent-oud', bg: 'bg-accent-oud/10', border: 'border-accent-oud/20' },
+} as const;
+
+function NotesSideBySide({ notesA, notesB, nameA, nameB }: { notesA: FragranceNote[]; notesB: FragranceNote[]; nameA: string; nameB: string }) {
+  const aNames = new Set(notesA.map((n) => n.name.toLowerCase()));
+  const bNames = new Set(notesB.map((n) => n.name.toLowerCase()));
+  const layers: ('top' | 'middle' | 'base')[] = ['top', 'middle', 'base'];
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-2">
-      <div className="text-right">
-        <span className={`text-sm tabular-nums ${isBetter === 'a' ? 'text-gold font-semibold' : 'text-txt'}`}>
-          {valA != null ? `${valA}${suffix}` : '—'}
-        </span>
-      </div>
-      <div className="text-center">
-        <span className="text-[10px] text-txt-muted uppercase tracking-wider">{label}</span>
-      </div>
-      <div>
-        <span className={`text-sm tabular-nums ${isBetter === 'b' ? 'text-gold font-semibold' : 'text-txt'}`}>
-          {valB != null ? `${valB}${suffix}` : '—'}
-        </span>
-      </div>
+    <div className="space-y-3">
+      {layers.map((layer) => {
+        const aNotes = notesA.filter((n) => n.layer === layer);
+        const bNotes = notesB.filter((n) => n.layer === layer);
+        if (aNotes.length === 0 && bNotes.length === 0) return null;
+        const cfg = layerConfig[layer];
+        return (
+          <div key={layer}>
+            <span className={`text-[9px] uppercase tracking-wider font-semibold ${cfg.color}`}>{cfg.label}</span>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <div className="flex flex-wrap gap-1">
+                {aNotes.map((n, i) => {
+                  const shared = bNames.has(n.name.toLowerCase());
+                  return (
+                    <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                      shared ? 'bg-gold/15 border-gold/30 text-gold' : `${cfg.bg} ${cfg.border} ${cfg.color}`
+                    }`}>{n.name}</span>
+                  );
+                })}
+                {aNotes.length === 0 && <span className="text-[10px] text-txt-muted italic">—</span>}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {bNotes.map((n, i) => {
+                  const shared = aNames.has(n.name.toLowerCase());
+                  return (
+                    <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                      shared ? 'bg-gold/15 border-gold/30 text-gold' : `${cfg.bg} ${cfg.border} ${cfg.color}`
+                    }`}>{n.name}</span>
+                  );
+                })}
+                {bNotes.length === 0 && <span className="text-[10px] text-txt-muted italic">—</span>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SeasonCompare({ seasonsA, seasonsB }: { seasonsA: Season[]; seasonsB: Season[] }) {
+  const all: Season[] = ['Frühling', 'Sommer', 'Herbst', 'Winter'];
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {[seasonsA, seasonsB].map((seasons, idx) => (
+        <div key={idx} className="flex flex-wrap gap-1.5">
+          {seasons.includes('Ganzjährig') ? (
+            <span className="text-[10px] px-2 py-0.5 bg-gold/10 border border-gold/20 rounded-full text-gold">Ganzjährig</span>
+          ) : (
+            all.map((s) => {
+              const active = seasons.includes(s);
+              return (
+                <span key={s} className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                  active ? 'bg-gold/10 border-gold/20 text-gold' : 'bg-surface-2 border-border text-txt-muted/40'
+                }`}>{s}</span>
+              );
+            })
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InfoRow({ label, valueA, valueB, highlight }: { label: string; valueA: string; valueB: string; highlight?: 'a' | 'b' | null }) {
+  return (
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-2.5">
+      <span className={`text-sm text-right tabular-nums ${highlight === 'a' ? 'text-gold font-semibold' : 'text-txt'}`}>{valueA}</span>
+      <span className="text-[10px] text-txt-muted uppercase tracking-wider min-w-[80px] text-center">{label}</span>
+      <span className={`text-sm tabular-nums ${highlight === 'b' ? 'text-gold font-semibold' : 'text-txt'}`}>{valueB}</span>
     </div>
   );
 }
@@ -65,13 +143,13 @@ export function ComparePage({ collection }: ComparePageProps) {
     [collection]
   );
 
-  const pricePerMlA = fragA?.purchase_price && fragA?.size_ml ? fragA.purchase_price / fragA.size_ml : null;
-  const pricePerMlB = fragB?.purchase_price && fragB?.size_ml ? fragB.purchase_price / fragB.size_ml : null;
+  const ppmA = fragA?.purchase_price && fragA?.size_ml ? fragA.purchase_price / fragA.size_ml : null;
+  const ppmB = fragB?.purchase_price && fragB?.size_ml ? fragB.purchase_price / fragB.size_ml : null;
 
-  const sharedNotes = useMemo(() => {
-    if (!fragA || !fragB) return [];
+  const sharedNoteCount = useMemo(() => {
+    if (!fragA || !fragB) return 0;
     const aNotes = new Set(fragA.notes.map((n) => n.name.toLowerCase()));
-    return fragB.notes.filter((n) => aNotes.has(n.name.toLowerCase()));
+    return fragB.notes.filter((n) => aNotes.has(n.name.toLowerCase())).length;
   }, [fragA, fragB]);
 
   const ratingKeys: { key: keyof RatingDetails; label: string }[] = [
@@ -83,6 +161,25 @@ export function ComparePage({ collection }: ComparePageProps) {
     { key: 'compliments', label: 'Komplimente' },
     { key: 'versatility', label: 'Vielseitigkeit' },
   ];
+
+  // Score who "wins"
+  const scoreA = useMemo(() => {
+    if (!fragA?.rating || !fragB?.rating) return 0;
+    return ratingKeys.reduce((sum, { key }) => {
+      const a = fragA.rating?.[key] || 0;
+      const b = fragB.rating?.[key] || 0;
+      return sum + (a > b ? 1 : a < b ? -1 : 0);
+    }, 0);
+  }, [fragA, fragB]);
+
+  const higherNum = (a: number | null, b: number | null): 'a' | 'b' | null => {
+    if (a == null || b == null) return null;
+    return a > b ? 'a' : b > a ? 'b' : null;
+  };
+  const lowerNum = (a: number | null, b: number | null): 'a' | 'b' | null => {
+    if (a == null || b == null) return null;
+    return a < b ? 'a' : b < a ? 'b' : null;
+  };
 
   return (
     <div>
@@ -119,85 +216,148 @@ export function ComparePage({ collection }: ComparePageProps) {
       </div>
 
       {fragA && fragB ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Header cards */}
           <div className="grid grid-cols-2 gap-4">
-            {[fragA, fragB].map((f) => (
-              <div key={f.id} className="bg-surface border border-border rounded-lg p-4 flex flex-col items-center text-center">
-                <div className="w-20 h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden mb-3">
-                  <CompareImage fragrance={f} />
-                </div>
-                <h3 className="text-sm font-medium text-txt">{f.name}</h3>
-                <p className="text-xs text-txt-muted">{f.brand}</p>
-                <p className="text-[10px] text-txt-muted mt-1">{f.concentration} · {f.family}</p>
-                {f.tier && (
-                  <div className={`mt-2 w-6 h-6 flex items-center justify-center rounded-sm text-[10px] font-bold ${
-                    f.tier === 'S' ? 'bg-gold/15 text-gold' :
-                    f.tier === 'A' ? 'bg-green-500/15 text-green-400' :
-                    f.tier === 'B' ? 'bg-blue-500/15 text-blue-400' :
-                    f.tier === 'C' ? 'bg-gray-500/15 text-gray-400' :
-                    'bg-rose-500/15 text-rose-400'
-                  }`}>
-                    {f.tier}
+            {[fragA, fragB].map((f, idx) => {
+              const ppm = f.purchase_price && f.size_ml ? (f.purchase_price / f.size_ml).toFixed(2) : null;
+              return (
+                <div key={f.id} className={`bg-surface border rounded-lg p-4 flex flex-col items-center text-center ${
+                  idx === 0 ? 'border-gold/20' : 'border-blue-400/20'
+                }`}>
+                  <div className="w-20 h-28 rounded-sm bg-surface-2 flex items-center justify-center overflow-hidden mb-3">
+                    <CompareImage fragrance={f} />
                   </div>
-                )}
-              </div>
-            ))}
+                  <h3 className="text-sm font-medium text-txt">{f.name}</h3>
+                  <p className="text-xs text-txt-muted">{f.brand}</p>
+                  <p className="text-[10px] text-txt-muted mt-1">{f.concentration} · {f.family !== 'Other' ? f.family : '—'}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    {f.tier && <TierBadge tier={f.tier} />}
+                    {f.rating?.overall ? (
+                      <div className="flex items-center gap-0.5">
+                        <Star size={10} className="text-gold fill-gold" />
+                        <span className="text-xs text-gold font-semibold">{f.rating.overall}/10</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  {f.purchase_price != null && (
+                    <p className="text-[10px] text-txt-muted mt-1.5 tabular-nums">
+                      {f.purchase_price.toFixed(0)} € · {f.size_ml || '?'} ml
+                      {ppm && ` · ${ppm} €/ml`}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          {/* Radar overlay */}
-          {fragA.rating && fragB.rating && fragA.rating.sillage > 0 && fragB.rating.sillage > 0 && (
+          {/* Rating bars */}
+          {(fragA.rating || fragB.rating) && (
             <div className="bg-surface border border-border rounded-lg p-4">
-              <h2 className="text-xs text-txt-muted uppercase tracking-wider mb-3 text-center">Bewertungsvergleich</h2>
-              <div className="flex justify-center">
-                <RadarChart rating={fragA.rating} size={240} compareRating={fragB.rating} />
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs text-txt-muted uppercase tracking-wider">Bewertungen</h2>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-gold/70" />
+                    <span className="text-[10px] text-txt-muted truncate max-w-[80px]">{fragA.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-blue-400/70" />
+                    <span className="text-[10px] text-txt-muted truncate max-w-[80px]">{fragB.name}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-center gap-6 mt-3">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-0.5 bg-gold rounded" />
-                  <span className="text-[10px] text-txt-muted">{fragA.name}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-0.5 bg-blue-400 rounded" />
-                  <span className="text-[10px] text-txt-muted">{fragB.name}</span>
-                </div>
+              <div className="space-y-3">
+                {ratingKeys.map(({ key, label }) => (
+                  <RatingBar
+                    key={key}
+                    label={label}
+                    valA={fragA.rating?.[key] || 0}
+                    valB={fragB.rating?.[key] || 0}
+                  />
+                ))}
               </div>
             </div>
           )}
 
-          {/* Stats comparison */}
+          {/* Radar overlay */}
+          {fragA.rating && fragB.rating && fragA.rating.sillage > 0 && fragB.rating.sillage > 0 && (
+            <div className="bg-surface border border-border rounded-lg p-4">
+              <h2 className="text-xs text-txt-muted uppercase tracking-wider mb-3 text-center">Radar-Overlay</h2>
+              <div className="flex justify-center">
+                <RadarChart rating={fragA.rating} size={220} compareRating={fragB.rating} />
+              </div>
+            </div>
+          )}
+
+          {/* Quick stats */}
           <div className="bg-surface border border-border rounded-lg p-4">
-            <h2 className="text-xs text-txt-muted uppercase tracking-wider mb-2 text-center">Detailvergleich</h2>
+            <h2 className="text-xs text-txt-muted uppercase tracking-wider mb-2 text-center">Eckdaten</h2>
             <div className="divide-y divide-border">
-              {ratingKeys.map(({ key, label }) => (
-                <StatCompare
-                  key={key}
-                  label={label}
-                  valA={fragA.rating?.[key] || null}
-                  valB={fragB.rating?.[key] || null}
-                  suffix="/10"
-                />
-              ))}
-              <StatCompare label="Preis" valA={fragA.purchase_price} valB={fragB.purchase_price} suffix=" €" higher="worse" />
-              <StatCompare label="€/ml" valA={pricePerMlA ? Math.round(pricePerMlA * 100) / 100 : null} valB={pricePerMlB ? Math.round(pricePerMlB * 100) / 100 : null} suffix=" €" higher="worse" />
-              <StatCompare label="Größe" valA={fragA.size_ml} valB={fragB.size_ml} suffix=" ml" />
-              <StatCompare label="Füllstand" valA={fragA.fill_level} valB={fragB.fill_level} suffix="%" />
+              <InfoRow
+                label="Preis"
+                valueA={fragA.purchase_price != null ? `${fragA.purchase_price.toFixed(0)} €` : '—'}
+                valueB={fragB.purchase_price != null ? `${fragB.purchase_price.toFixed(0)} €` : '—'}
+                highlight={lowerNum(fragA.purchase_price, fragB.purchase_price)}
+              />
+              <InfoRow
+                label="€/ml"
+                valueA={ppmA ? `${ppmA.toFixed(2)} €` : '—'}
+                valueB={ppmB ? `${ppmB.toFixed(2)} €` : '—'}
+                highlight={lowerNum(ppmA, ppmB)}
+              />
+              <InfoRow
+                label="Größe"
+                valueA={fragA.size_ml ? `${fragA.size_ml} ml` : '—'}
+                valueB={fragB.size_ml ? `${fragB.size_ml} ml` : '—'}
+                highlight={higherNum(fragA.size_ml, fragB.size_ml)}
+              />
+              <InfoRow
+                label="Füllstand"
+                valueA={`${fragA.fill_level}%`}
+                valueB={`${fragB.fill_level}%`}
+                highlight={higherNum(fragA.fill_level, fragB.fill_level)}
+              />
+              <InfoRow
+                label="Konzentration"
+                valueA={fragA.concentration}
+                valueB={fragB.concentration}
+              />
+              <InfoRow
+                label="Erscheinungsjahr"
+                valueA={fragA.launch_year ? String(fragA.launch_year) : '—'}
+                valueB={fragB.launch_year ? String(fragB.launch_year) : '—'}
+              />
             </div>
           </div>
 
-          {/* Shared notes */}
-          {sharedNotes.length > 0 && (
+          {/* Season compare */}
+          {(fragA.season.length > 0 || fragB.season.length > 0) && (
             <div className="bg-surface border border-border rounded-lg p-4">
-              <h2 className="text-xs text-txt-muted uppercase tracking-wider mb-3">
-                Gemeinsame Noten ({sharedNotes.length})
-              </h2>
-              <div className="flex flex-wrap gap-1.5">
-                {sharedNotes.map((n, i) => (
-                  <span key={i} className="text-xs px-2 py-0.5 bg-gold/10 border border-gold/20 rounded-full text-gold">
-                    {n.name}
-                  </span>
-                ))}
+              <h2 className="text-xs text-txt-muted uppercase tracking-wider mb-3">Saison</h2>
+              <SeasonCompare seasonsA={fragA.season} seasonsB={fragB.season} />
+            </div>
+          )}
+
+          {/* Notes side by side */}
+          {(fragA.notes.length > 0 || fragB.notes.length > 0) && (
+            <div className="bg-surface border border-border rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs text-txt-muted uppercase tracking-wider">Duftnoten</h2>
+                {sharedNoteCount > 0 && (
+                  <span className="text-[10px] text-gold">{sharedNoteCount} gemeinsam</span>
+                )}
               </div>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <span className="text-[10px] text-txt-muted font-medium truncate">{fragA.name}</span>
+                <span className="text-[10px] text-txt-muted font-medium truncate">{fragB.name}</span>
+              </div>
+              <NotesSideBySide
+                notesA={fragA.notes}
+                notesB={fragB.notes}
+                nameA={fragA.name}
+                nameB={fragB.name}
+              />
             </div>
           )}
 
@@ -205,14 +365,19 @@ export function ComparePage({ collection }: ComparePageProps) {
           {fragA.rating?.overall && fragB.rating?.overall && (
             <div className="bg-surface border border-gold/15 rounded-lg p-4 text-center">
               <Trophy size={20} className="mx-auto text-gold mb-2" />
-              <p className="text-sm text-txt-muted">
-                {fragA.rating.overall > fragB.rating.overall
-                  ? <><span className="text-gold font-medium">{fragA.name}</span> hat die bessere Gesamtbewertung</>
-                  : fragB.rating.overall > fragA.rating.overall
-                  ? <><span className="text-gold font-medium">{fragB.name}</span> hat die bessere Gesamtbewertung</>
-                  : <>Beide Düfte sind gleich bewertet</>
-                }
-              </p>
+              {scoreA !== 0 ? (
+                <p className="text-sm text-txt">
+                  <span className="text-gold font-medium">{scoreA > 0 ? fragA.name : fragB.name}</span>{' '}
+                  gewinnt in {Math.abs(scoreA)} von {ratingKeys.length} Kategorien
+                </p>
+              ) : (
+                <p className="text-sm text-txt-muted">Gleichstand — beide Düfte sind gleich stark</p>
+              )}
+              {fragA.rating.overall !== fragB.rating.overall && (
+                <p className="text-xs text-txt-muted mt-1">
+                  Gesamtbewertung: {fragA.rating.overall}/10 vs {fragB.rating.overall}/10
+                </p>
+              )}
             </div>
           )}
         </div>
