@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Button, Input, Textarea, Select, StarRating, TierBadge } from '@/components/common';
 import { RadarChart } from '@/components/Rating/RadarChart';
 import { useImageFetch } from '@/hooks/useImageFetch';
-import type { Fragrance, FragranceInput, Concentration, FragranceFamily, Season, Tier, RatingDetails } from '@/lib/types';
+import type { Fragrance, FragranceInput, FragranceNote, Concentration, FragranceFamily, Season, Tier, RatingDetails } from '@/lib/types';
 import { Trash2, Droplets, Loader2, Pencil } from 'lucide-react';
 
 const concentrationOptions: { value: Concentration; label: string }[] = [
@@ -57,6 +57,62 @@ interface FragranceDetailProps {
   onSave: (id: string, updates: Partial<FragranceInput>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onToast?: (message: string) => void;
+  collection?: Fragrance[];
+  onSelect?: (f: Fragrance) => void;
+}
+
+const layerConfig = {
+  top: { label: 'Kopf', color: 'text-accent-citrus', bg: 'bg-accent-citrus/10', border: 'border-accent-citrus/20' },
+  middle: { label: 'Herz', color: 'text-accent-floral', bg: 'bg-accent-floral/10', border: 'border-accent-floral/20' },
+  base: { label: 'Basis', color: 'text-accent-oud', bg: 'bg-accent-oud/10', border: 'border-accent-oud/20' },
+} as const;
+
+function NotesPyramid({ notes }: { notes: FragranceNote[] }) {
+  const top = notes.filter((n) => n.layer === 'top');
+  const middle = notes.filter((n) => n.layer === 'middle');
+  const base = notes.filter((n) => n.layer === 'base');
+  const layers = [
+    { key: 'top' as const, notes: top },
+    { key: 'middle' as const, notes: middle },
+    { key: 'base' as const, notes: base },
+  ].filter((l) => l.notes.length > 0);
+
+  if (layers.length === 0) return null;
+
+  // If all notes have the same layer (no pyramid structure), show flat
+  if (layers.length === 1 && layers[0].notes.length === notes.length && notes.length <= 6) {
+    return (
+      <div className="flex flex-wrap gap-1 mt-1">
+        {notes.map((n, i) => (
+          <span key={i} className="text-[10px] px-1.5 py-0.5 bg-surface-2 border border-border rounded-full text-txt-muted">
+            {n.name}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 mt-2">
+      {layers.map(({ key, notes: layerNotes }) => {
+        const cfg = layerConfig[key];
+        return (
+          <div key={key} className="flex items-start gap-2">
+            <span className={`text-[9px] uppercase tracking-wider font-semibold w-8 pt-0.5 shrink-0 ${cfg.color}`}>
+              {cfg.label}
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {layerNotes.map((n, i) => (
+                <span key={i} className={`text-[10px] px-1.5 py-0.5 ${cfg.bg} border ${cfg.border} rounded-full ${cfg.color}`}>
+                  {n.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -68,7 +124,30 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, onToast }: FragranceDetailProps) {
+function findSimilar(fragrance: Fragrance, collection: Fragrance[], max = 3): Fragrance[] {
+  const noteNames = new Set(fragrance.notes.map((n) => n.name.toLowerCase()));
+  return collection
+    .filter((f) => f.id !== fragrance.id)
+    .map((f) => {
+      let score = 0;
+      // Shared notes (strongest signal)
+      const fNotes = f.notes.map((n) => n.name.toLowerCase());
+      score += fNotes.filter((n) => noteNames.has(n)).length * 3;
+      // Same family
+      if (f.family === fragrance.family) score += 2;
+      // Same concentration
+      if (f.concentration === fragrance.concentration) score += 1;
+      // Same brand (slight bonus)
+      if (f.brand === fragrance.brand) score += 1;
+      return { fragrance: f, score };
+    })
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max)
+    .map((r) => r.fragrance);
+}
+
+export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, onToast, collection, onSelect }: FragranceDetailProps) {
   const [tab, setTab] = useState<'info' | 'rating' | 'notes'>('info');
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -194,16 +273,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
             <p className="text-xs text-txt-muted">Erscheinungsjahr: {fragrance.launch_year}</p>
           )}
           {fragrance.notes.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {fragrance.notes.slice(0, 6).map((n, i) => (
-                <span key={i} className="text-[10px] px-1.5 py-0.5 bg-surface-2 border border-border rounded-full text-txt-muted">
-                  {n.name}
-                </span>
-              ))}
-              {fragrance.notes.length > 6 && (
-                <span className="text-[10px] text-txt-muted">+{fragrance.notes.length - 6}</span>
-              )}
-            </div>
+            <NotesPyramid notes={fragrance.notes} />
           )}
         </div>
       </div>
@@ -391,6 +461,35 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
           placeholder="Deine Gedanken zu diesem Duft..."
         />
       )}
+
+      {/* Similar fragrances */}
+      {collection && collection.length > 1 && (() => {
+        const similar = findSimilar(fragrance, collection);
+        if (similar.length === 0) return null;
+        return (
+          <div className="mt-6 pt-4 border-t border-border">
+            <span className="text-xs text-txt-muted uppercase tracking-wider">Ähnlich in deiner Sammlung</span>
+            <div className="flex flex-col gap-2 mt-2">
+              {similar.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => onSelect?.(f)}
+                  className="flex items-center gap-3 p-2 bg-surface-2 border border-border rounded-sm hover:border-gold-dim transition-all text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-txt truncate">{f.name}</p>
+                    <p className="text-[11px] text-txt-muted">{f.brand} · {f.concentration}</p>
+                  </div>
+                  {f.rating?.overall && (
+                    <span className="text-xs text-gold font-semibold">{f.rating.overall}/10</span>
+                  )}
+                  {f.tier && <TierBadge tier={f.tier} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
     </Modal>
   );

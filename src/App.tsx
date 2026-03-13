@@ -13,6 +13,7 @@ import { SharePage } from '@/pages/SharePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { FragranceDetail } from '@/components/Collection/FragranceDetail';
 import { useToast, ToastContainer } from '@/components/common';
+import { usePublicShare } from '@/hooks/usePublicShare';
 import type { Fragrance, FragranceInput } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -31,6 +32,7 @@ export default function App() {
 
   const [rankingSelected, setRankingSelected] = useState<Fragrance | null>(null);
   const { toasts, show: showToast, dismiss: dismissToast } = useToast();
+  const { shareUrl } = usePublicShare(user?.id);
 
   // Show collection errors as toasts
   useEffect(() => {
@@ -117,6 +119,7 @@ export default function App() {
                     onUpdate={updateFragrance}
                     onDelete={deleteWithUndo}
                     existingIds={existingKeys}
+                    shareUrl={shareUrl}
                     onToast={showToast}
                   />
                 }

@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { FragranceCard } from '@/components/Collection/FragranceCard';
 import { FragranceDetail } from '@/components/Collection/FragranceDetail';
+import { FragranceOfTheDay } from '@/components/Collection/FragranceOfTheDay';
 import { AddFragranceModal } from '@/components/Search/AddFragranceModal';
 import { Button, Input, Select, EmptyState } from '@/components/common';
 import type { Fragrance, FragranceInput } from '@/lib/types';
-import { Plus, Library, LayoutGrid, List, Filter } from 'lucide-react';
+import { Plus, Library, LayoutGrid, List, Filter, Share2 } from 'lucide-react';
 
 interface CollectionPageProps {
   collection: Fragrance[];
@@ -13,6 +14,7 @@ interface CollectionPageProps {
   onUpdate: (id: string, updates: Partial<FragranceInput>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   existingIds?: Set<string>;
+  shareUrl?: string | null;
   onToast?: (message: string) => void;
 }
 
@@ -32,7 +34,7 @@ function SkeletonCard() {
   );
 }
 
-export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete, existingIds, onToast }: CollectionPageProps) {
+export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete, existingIds, shareUrl, onToast }: CollectionPageProps) {
   const [selected, setSelected] = useState<Fragrance | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -109,10 +111,25 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
             {collection.length} Düfte{totalValue > 0 && ` · ${totalValue.toFixed(0)} € Gesamtwert`}
           </p>
         </div>
-        <Button onClick={() => setAddOpen(true)}>
-          <Plus size={16} />
-          Hinzufügen
-        </Button>
+        <div className="flex gap-2">
+          {shareUrl && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard.writeText(shareUrl);
+                onToast?.('Share-Link kopiert');
+              }}
+              title="Sammlung teilen"
+            >
+              <Share2 size={14} />
+            </Button>
+          )}
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus size={16} />
+            Hinzufügen
+          </Button>
+        </div>
       </div>
 
       {/* Search & filter bar */}
@@ -192,6 +209,11 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
         </div>
       )}
 
+      {/* Fragrance of the Day */}
+      {!loading && collection.length >= 3 && !search && !filterFamily && !filterBrand && !filterNote && (
+        <FragranceOfTheDay collection={collection} onClick={setSelected} />
+      )}
+
       {/* Grid / List */}
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -235,6 +257,8 @@ export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete,
         onSave={onUpdate}
         onDelete={onDelete}
         onToast={onToast}
+        collection={collection}
+        onSelect={setSelected}
       />
 
       <AddFragranceModal
