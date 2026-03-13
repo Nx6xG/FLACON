@@ -3,7 +3,7 @@ import { Modal, Button, Input, Select } from '@/components/common';
 import { useFragellaSearch } from '@/hooks/useFragellaSearch';
 import { mapConcentration, mapFamily } from '@/lib/mappers';
 import type { FragranceInput, FragellaSearchResult, Concentration, FragranceFamily } from '@/lib/types';
-import { Search, Plus, Loader2, Droplets, Check } from 'lucide-react';
+import { Search, Plus, Loader2, Droplets, Check, AlertTriangle } from 'lucide-react';
 
 const concentrations: { value: Concentration; label: string }[] = [
   { value: 'Parfum', label: 'Parfum' },
@@ -91,6 +91,10 @@ export function AddFragranceModal({ open, onClose, onAdd, isWishlist, existingId
     setAddedIds((prev) => new Set(prev).add(result.id));
     setAdding(false);
   };
+
+  const manualDuplicate = name.trim() && brand.trim()
+    ? existingIds?.has(`${name.trim().toLowerCase()}::${brand.trim().toLowerCase()}`) || false
+    : false;
 
   const handleAddManual = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,12 +257,18 @@ export function AddFragranceModal({ open, onClose, onAdd, isWishlist, existingId
               options={families}
             />
           </div>
+          {manualDuplicate && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-accent-amber/10 border border-accent-amber/20 rounded-sm">
+              <AlertTriangle size={14} className="text-accent-amber shrink-0" />
+              <span className="text-xs text-accent-amber">Dieses Parfum ist bereits in deiner Sammlung.</span>
+            </div>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" type="button" onClick={resetAndClose}>
               Abbrechen
             </Button>
             <Button type="submit" disabled={adding || !name.trim() || !brand.trim()}>
-              {adding ? 'Wird hinzugefügt...' : 'Hinzufügen'}
+              {adding ? 'Wird hinzugefügt...' : manualDuplicate ? 'Trotzdem hinzufügen' : 'Hinzufügen'}
             </Button>
           </div>
         </form>

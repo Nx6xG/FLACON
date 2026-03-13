@@ -30,6 +30,14 @@ const familyOptions: { value: FragranceFamily; label: string }[] = [
   { value: 'Other', label: 'Andere' },
 ];
 
+const seasonOptions: { value: Season; label: string }[] = [
+  { value: 'Frühling', label: 'Frühling' },
+  { value: 'Sommer', label: 'Sommer' },
+  { value: 'Herbst', label: 'Herbst' },
+  { value: 'Winter', label: 'Winter' },
+  { value: 'Ganzjährig', label: 'Ganzjährig' },
+];
+
 const tiers: (Tier | '')[] = ['', 'S', 'A', 'B', 'C', 'D'];
 
 const defaultRating: RatingDetails = {
@@ -73,6 +81,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
   const [marketPrice, setMarketPrice] = useState('');
   const [sizeMl, setSizeMl] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
+  const [season, setSeason] = useState<Season[]>(['Ganzjährig']);
   const [notesText, setNotesText] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -99,6 +108,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
       setMarketPrice(fragrance.market_price?.toString() || '');
       setSizeMl(fragrance.size_ml?.toString() || '');
       setPurchaseDate(fragrance.purchase_date || '');
+      setSeason(fragrance.season?.length ? fragrance.season : ['Ganzjährig']);
       setNotesText(fragrance.notes_text || '');
       setTab('info');
       setEditing(false);
@@ -115,6 +125,7 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
       brand: brand.trim() || fragrance.brand,
       concentration,
       family,
+      season,
       rating: rating.overall > 0 ? rating : null,
       tier: tier || null,
       fill_level: fillLevel,
@@ -314,6 +325,35 @@ export function FragranceDetail({ fragrance, open, onClose, onSave, onDelete, on
                 onChange={(e) => setTier(e.target.value as Tier | '')}
                 options={tiers.map((t) => ({ value: t, label: t || '— Kein Tier —' }))}
               />
+            </div>
+            <div className="col-span-2">
+              <span className="text-xs text-txt-muted uppercase tracking-wider">Saison</span>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {seasonOptions.map((s) => {
+                  const active = season.includes(s.value);
+                  return (
+                    <button
+                      key={s.value}
+                      type="button"
+                      onClick={() => {
+                        if (s.value === 'Ganzjährig') {
+                          setSeason(['Ganzjährig']);
+                        } else {
+                          const without = season.filter((v) => v !== 'Ganzjährig' && v !== s.value);
+                          setSeason(active ? (without.length ? without : ['Ganzjährig']) : [...without, s.value]);
+                        }
+                      }}
+                      className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                        active
+                          ? 'bg-gold/15 border-gold/30 text-gold'
+                          : 'bg-surface-2 border-border text-txt-muted hover:border-border-light'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

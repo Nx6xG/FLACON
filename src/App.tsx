@@ -94,17 +94,13 @@ export default function App() {
       <div className="min-h-screen bg-bg font-body text-txt">
         <Header user={user} onSignOut={signOut} />
         <main className="max-w-6xl mx-auto px-4 py-8">
-          {dataLoading ? (
-            <div className="flex items-center justify-center py-24">
-              <Loader2 size={32} className="animate-spin text-gold" />
-            </div>
-          ) : (
             <Routes>
               <Route
                 path="/"
                 element={
                   <CollectionPage
                     collection={collection}
+                    loading={dataLoading}
                     onAdd={addWithToast}
                     onUpdate={updateFragrance}
                     onDelete={deleteWithUndo}
@@ -162,7 +158,6 @@ export default function App() {
                 }
               />
             </Routes>
-          )}
         </main>
 
         {/* Detail modal for ranking page */}

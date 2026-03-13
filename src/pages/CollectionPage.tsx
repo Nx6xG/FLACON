@@ -8,6 +8,7 @@ import { Plus, Library, LayoutGrid, List, Filter } from 'lucide-react';
 
 interface CollectionPageProps {
   collection: Fragrance[];
+  loading?: boolean;
   onAdd: (input: FragranceInput) => Promise<any>;
   onUpdate: (id: string, updates: Partial<FragranceInput>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
@@ -15,18 +16,40 @@ interface CollectionPageProps {
   onToast?: (message: string) => void;
 }
 
-export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existingIds, onToast }: CollectionPageProps) {
+function SkeletonCard() {
+  return (
+    <div className="flex flex-col bg-surface border border-border rounded overflow-hidden animate-pulse">
+      <div className="aspect-[3/4] bg-surface-2" />
+      <div className="p-3 space-y-2">
+        <div className="h-4 bg-surface-2 rounded w-3/4" />
+        <div className="h-3 bg-surface-2 rounded w-1/2" />
+        <div className="flex gap-1.5">
+          <div className="h-4 bg-surface-2 rounded-full w-12" />
+          <div className="h-4 bg-surface-2 rounded-full w-10" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function CollectionPage({ collection, loading, onAdd, onUpdate, onDelete, existingIds, onToast }: CollectionPageProps) {
   const [selected, setSelected] = useState<Fragrance | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [filterFamily, setFilterFamily] = useState('');
   const [filterBrand, setFilterBrand] = useState('');
+  const [filterNote, setFilterNote] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'name-desc' | 'rating' | 'rating-asc' | 'price' | 'price-asc' | 'fill'>('recent');
   const [showFilters, setShowFilters] = useState(false);
 
   const brands = useMemo(
     () => [...new Set(collection.map((f) => f.brand))].sort(),
+    [collection]
+  );
+
+  const noteNames = useMemo(
+    () => [...new Set(collection.flatMap((f) => f.notes.map((n) => n.name)))].sort(),
     [collection]
   );
 
@@ -41,6 +64,7 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
     }
     if (filterFamily) items = items.filter((f) => f.family === filterFamily);
     if (filterBrand) items = items.filter((f) => f.brand === filterBrand);
+    if (filterNote) items = items.filter((f) => f.notes.some((n) => n.name === filterNote));
 
     switch (sortBy) {
       case 'name':
@@ -69,7 +93,7 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
     }
 
     return items;
-  }, [collection, search, filterFamily, filterBrand, sortBy]);
+  }, [collection, search, filterFamily, filterBrand, filterNote, sortBy]);
 
   const totalValue = collection.reduce((sum, f) => sum + (f.purchase_price || 0), 0);
 
@@ -119,7 +143,7 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <Select
                 value={filterFamily}
                 onChange={(e) => setFilterFamily(e.target.value)}
@@ -139,6 +163,16 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
                   ...brands.map((b) => ({ value: b, label: b })),
                 ]}
               />
+              {noteNames.length > 0 && (
+                <Select
+                  value={filterNote}
+                  onChange={(e) => setFilterNote(e.target.value)}
+                  options={[
+                    { value: '', label: 'Alle Noten' },
+                    ...noteNames.map((n) => ({ value: n, label: n })),
+                  ]}
+                />
+              )}
               <Select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
@@ -159,17 +193,25 @@ export function CollectionPage({ collection, onAdd, onUpdate, onDelete, existing
       )}
 
       {/* Grid / List */}
-      {filtered.length > 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : filtered.length > 0 ? (
         view === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {filtered.map((f) => (
-              <FragranceCard key={f.id} fragrance={f} onClick={() => setSelected(f)} />
+            {filtered.map((f, i) => (
+              <div key={f.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i * 30, 300)}ms` }}>
+                <FragranceCard fragrance={f} onClick={() => setSelected(f)} />
+              </div>
             ))}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {filtered.map((f) => (
-              <FragranceCard key={f.id} fragrance={f} onClick={() => setSelected(f)} compact />
+            {filtered.map((f, i) => (
+              <div key={f.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i * 20, 200)}ms` }}>
+                <FragranceCard fragrance={f} onClick={() => setSelected(f)} compact />
+              </div>
             ))}
           </div>
         )
